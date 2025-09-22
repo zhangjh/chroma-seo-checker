@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SEO Checker</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <h1>SEO Checker</h1>
+            </div>
+            <div class="actions">
+                <button id="refresh-btn" class="btn btn-icon" title="刷新分析">
+                    <span class="icon">🔄</span>
+                </button>
+                <button id="settings-btn" class="btn btn-icon" title="设置">
+                    <span class="icon">⚙️</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Loading State -->
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>正在分析页面SEO...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error" class="error hidden">
+            <div class="error-icon">⚠️</div>
+            <h3>分析失败</h3>
+            <p id="error-message">无法分析当前页面，请刷新后重试</p>
+            <button id="retry-btn" class="btn btn-primary">重试</button>
+        </div>
+
+        <!-- Main Content -->
+        <main id="main-content" class="main-content">
+            <!-- SEO Score Section -->
+            <section class="score-section">
+                <div class="score-circle">
+                    <div class="score-value" id="overall-score">--</div>
+                    <div class="score-label">总分</div>
+                </div>
+                <div class="score-breakdown">
+                    <div class="score-item">
+                        <span class="score-category">技术SEO</span>
+                        <span class="score-bar">
+                            <span class="score-fill technical" id="technical-fill"></span>
+                        </span>
+                        <span class="score-number" id="technical-score">--</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-category">内容质量</span>
+                        <span class="score-bar">
+                            <span class="score-fill content" id="content-fill"></span>
+                        </span>
+                        <span class="score-number" id="content-score">--</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-category">性能优化</span>
+                        <span class="score-bar">
+                            <span class="score-fill performance" id="performance-fill"></span>
+                        </span>
+                        <span class="score-number" id="performance-score">--</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Quick Summary -->
+            <section class="summary-section">
+                <div class="summary-stats">
+                    <div class="stat-item critical">
+                        <span class="stat-number" id="critical-issues">0</span>
+                        <span class="stat-label">严重问题</span>
+                    </div>
+                    <div class="stat-item high">
+                        <span class="stat-number" id="high-issues">0</span>
+                        <span class="stat-label">高优先级</span>
+                    </div>
+                    <div class="stat-item total">
+                        <span class="stat-number" id="total-issues">0</span>
+                        <span class="stat-label">总问题</span>
+                    </div>
+                </div>
+                <div class="last-checked">
+                    <span>最后检查: </span>
+                    <span id="last-checked-time">--</span>
+                </div>
+            </section>
+
+            <!-- Issues List -->
+            <section class="issues-section">
+                <div class="section-header">
+                    <h3>主要问题</h3>
+                    <div class="filter-tabs">
+                        <button class="tab-btn active" data-filter="all">全部</button>
+                        <button class="tab-btn" data-filter="critical">严重</button>
+                        <button class="tab-btn" data-filter="high">高优先级</button>
+                    </div>
+                </div>
+                <div id="issues-list" class="issues-list">
+                    <!-- Issues will be populated dynamically -->
+                </div>
+                <div id="no-issues" class="no-issues hidden">
+                    <div class="success-icon">✅</div>
+                    <p>太棒了！没有发现严重的SEO问题</p>
+                </div>
+            </section>
+
+            <!-- AI Suggestions -->
+            <section class="suggestions-section">
+                <div class="section-header">
+                    <h3>AI优化建议</h3>
+                    <button id="generate-suggestions" class="btn btn-secondary btn-sm">生成建议</button>
+                </div>
+                <div id="suggestions-status" class="suggestions-status hidden">
+                    <span class="status-icon">ℹ️</span>
+                    <span id="suggestions-status-text">正在生成AI建议...</span>
+                </div>
+                <div id="suggestions-content" class="suggestions-content">
+                    <div id="suggestions-loading" class="suggestions-loading hidden">
+                        <div class="spinner-sm"></div>
+                        <span>AI正在分析...</span>
+                    </div>
+                    <div id="suggestions-list" class="suggestions-list">
+                        <!-- AI suggestions will be populated dynamically -->
+                    </div>
+                    <div id="no-suggestions" class="no-suggestions">
+                        <p>点击"生成建议"获取AI优化建议</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Action Buttons -->
+            <section class="actions-section">
+                <button id="detailed-report-btn" class="btn btn-primary btn-full">查看详细报告</button>
+                <div class="action-row">
+                    <button id="batch-check-btn" class="btn btn-secondary">批量检查</button>
+                    <button id="export-btn" class="btn btn-secondary">导出报告</button>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>

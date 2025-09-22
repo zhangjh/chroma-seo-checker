@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- SEO Checker Extension Icon -->
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4285f4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#34a853;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="60" fill="url(#gradient)" stroke="#1a73e8" stroke-width="2"/>
+  
+  <!-- Search magnifying glass -->
+  <circle cx="50" cy="50" r="20" fill="none" stroke="white" stroke-width="4"/>
+  <line x1="66" y1="66" x2="80" y2="80" stroke="white" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- SEO text -->
+  <text x="64" y="100" font-family="Arial, sans-serif" font-size="16" font-weight="bold" 
+        text-anchor="middle" fill="white">SEO</text>
+  
+  <!-- Performance indicator -->
+  <rect x="85" y="25" width="8" height="20" fill="#34a853" rx="2"/>
+  <rect x="95" y="30" width="8" height="15" fill="#fbbc04" rx="2"/>
+  <rect x="105" y="35" width="8" height="10" fill="#ea4335" rx="2"/>
+</svg>
