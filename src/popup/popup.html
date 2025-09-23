@@ -17,16 +17,25 @@
                 <button id="refresh-btn" class="btn btn-icon" title="刷新分析">
                     <span class="icon">🔄</span>
                 </button>
-                <button id="settings-btn" class="btn btn-icon" title="设置">
-                    <span class="icon">⚙️</span>
-                </button>
             </div>
         </header>
 
         <!-- Loading State -->
         <div id="loading" class="loading hidden">
             <div class="spinner"></div>
-            <p>正在分析页面SEO...</p>
+            <div class="loading-content">
+                <p id="loading-message">正在分析页面SEO...</p>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+                    <div id="progress-text" class="progress-text">0%</div>
+                </div>
+                <div id="progress-details" class="progress-details">
+                    <div id="current-step" class="current-step">准备开始分析...</div>
+                    <div id="step-counter" class="step-counter">第 0 步，共 5 步</div>
+                </div>
+            </div>
         </div>
 
         <!-- Error State -->
@@ -35,6 +44,7 @@
             <h3>分析失败</h3>
             <p id="error-message">无法分析当前页面，请刷新后重试</p>
             <button id="retry-btn" class="btn btn-primary">重试</button>
+            <button id="test-btn" class="btn btn-secondary" style="margin-top: 8px;">测试UI</button>
         </div>
 
         <!-- Main Content -->
@@ -139,12 +149,11 @@
             <section class="actions-section">
                 <button id="detailed-report-btn" class="btn btn-primary btn-full">查看详细报告</button>
                 <div class="action-row">
-                    <button id="batch-check-btn" class="btn btn-secondary">批量检查</button>
-                    <button id="export-btn" class="btn btn-secondary">导出报告</button>
+                    <button id="export-btn" class="btn btn-secondary btn-full">导出报告</button>
                 </div>
             </section>
         </main>
     </div>
-    <script src="popup.js"></script>
+    <script src="popup-simple.js"></script>
 </body>
 </html>

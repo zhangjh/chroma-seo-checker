@@ -7,13 +7,11 @@ import { PageAnalysis } from '../../types/analysis';
 export class StorageManager {
   private static readonly STORAGE_KEYS = {
     REPORTS: 'seo_reports',
-    BATCH_RESULTS: 'batch_results',
     SETTINGS: 'seo_settings',
     CACHE: 'seo_cache'
   } as const;
 
   private static readonly MAX_REPORTS = 100;
-  private static readonly MAX_BATCH_RESULTS = 20;
   private static readonly CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 
   /**
@@ -133,92 +131,7 @@ export class StorageManager {
     }
   }
 
-  /**
-   * Batch results management
-   */
 
-  /**
-   * Save batch check results
-   */
-  async saveBatchResults(batchResults: BatchResults): Promise<void> {
-    try {
-      const existingBatches = await this.getAllBatchResults();
-      
-      // Remove existing batch with same ID if it exists
-      const filteredBatches = existingBatches.filter(batch => batch.id !== batchResults.id);
-      
-      // Add new batch at the beginning
-      filteredBatches.unshift(batchResults);
-      
-      // Keep only the most recent MAX_BATCH_RESULTS
-      const trimmedBatches = filteredBatches.slice(0, StorageManager.MAX_BATCH_RESULTS);
-      
-      await chrome.storage.local.set({
-        [StorageManager.STORAGE_KEYS.BATCH_RESULTS]: trimmedBatches
-      });
-    } catch (error) {
-      throw new Error(`Failed to save batch results: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
-  /**
-   * Get all batch results
-   */
-  async getAllBatchResults(): Promise<BatchResults[]> {
-    try {
-      const result = await chrome.storage.local.get(StorageManager.STORAGE_KEYS.BATCH_RESULTS);
-      return result[StorageManager.STORAGE_KEYS.BATCH_RESULTS] || [];
-    } catch (error) {
-      throw new Error(`Failed to retrieve batch results: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
-  /**
-   * Get batch results by ID
-   */
-  async getBatchResultsById(id: string): Promise<BatchResults | null> {
-    try {
-      const batches = await this.getAllBatchResults();
-      return batches.find(batch => batch.id === id) || null;
-    } catch (error) {
-      throw new Error(`Failed to retrieve batch results with ID ${id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
-  /**
-   * Delete batch results by ID
-   */
-  async deleteBatchResults(id: string): Promise<boolean> {
-    try {
-      const batches = await this.getAllBatchResults();
-      const filteredBatches = batches.filter(batch => batch.id !== id);
-      
-      if (filteredBatches.length === batches.length) {
-        return false; // Batch not found
-      }
-      
-      await chrome.storage.local.set({
-        [StorageManager.STORAGE_KEYS.BATCH_RESULTS]: filteredBatches
-      });
-      
-      return true;
-    } catch (error) {
-      throw new Error(`Failed to delete batch results: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
-  /**
-   * Clear all batch results
-   */
-  async clearAllBatchResults(): Promise<void> {
-    try {
-      await chrome.storage.local.set({
-        [StorageManager.STORAGE_KEYS.BATCH_RESULTS]: []
-      });
-    } catch (error) {
-      throw new Error(`Failed to clear batch results: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
 
   /**
    * Cache management for temporary data
@@ -299,7 +212,6 @@ export class StorageManager {
   async getStorageStats(): Promise<StorageStats> {
     try {
       const reports = await this.getAllReports();
-      const batches = await this.getAllBatchResults();
       const allData = await chrome.storage.local.get();
       
       // Calculate storage usage
@@ -308,7 +220,6 @@ export class StorageManager {
       
       return {
         reportsCount: reports.length,
-        batchResultsCount: batches.length,
         totalSize: dataSize,
         maxSize: maxSize,
         usagePercentage: (dataSize / maxSize) * 100,
@@ -325,11 +236,9 @@ export class StorageManager {
   async exportAllData(): Promise<ExportData> {
     try {
       const reports = await this.getAllReports();
-      const batches = await this.getAllBatchResults();
       
       return {
         reports,
-        batchResults: batches,
         exportedAt: new Date(),
         version: '1.0'
       };
@@ -346,12 +255,6 @@ export class StorageManager {
       if (data.reports && Array.isArray(data.reports)) {
         await chrome.storage.local.set({
           [StorageManager.STORAGE_KEYS.REPORTS]: data.reports.slice(0, StorageManager.MAX_REPORTS)
-        });
-      }
-      
-      if (data.batchResults && Array.isArray(data.batchResults)) {
-        await chrome.storage.local.set({
-          [StorageManager.STORAGE_KEYS.BATCH_RESULTS]: data.batchResults.slice(0, StorageManager.MAX_BATCH_RESULTS)
         });
       }
     } catch (error) {
@@ -390,33 +293,10 @@ export class StorageManager {
 }
 
 /**
- * Supporting interfaces for batch results and storage management
+ * Supporting interfaces for storage management
  */
-export interface BatchResults {
-  id: string;
-  urls: string[];
-  results: SEOReport[];
-  summary: BatchSummary;
-  createdAt: Date;
-  completedAt?: Date;
-  status: 'pending' | 'running' | 'completed' | 'failed';
-}
-
-export interface BatchSummary {
-  totalUrls: number;
-  completedUrls: number;
-  failedUrls: number;
-  averageScore: number;
-  totalIssues: number;
-  criticalIssues: number;
-  highPriorityIssues: number;
-  mediumPriorityIssues: number;
-  lowPriorityIssues: number;
-}
-
 export interface StorageStats {
   reportsCount: number;
-  batchResultsCount: number;
   totalSize: number;
   maxSize: number;
   usagePercentage: number;
@@ -425,48 +305,6 @@ export interface StorageStats {
 
 export interface ExportData {
   reports: SEOReport[];
-  batchResults: BatchResults[];
-  exportedAt: Date;
-  version: string;
-}
-/**
- *
- Supporting interfaces for batch results and storage management
- */
-export interface BatchResults {
-  id: string;
-  urls: string[];
-  results: SEOReport[];
-  summary: BatchSummary;
-  createdAt: Date;
-  completedAt?: Date;
-  status: 'pending' | 'running' | 'completed' | 'failed';
-}
-
-export interface BatchSummary {
-  totalUrls: number;
-  completedUrls: number;
-  failedUrls: number;
-  averageScore: number;
-  totalIssues: number;
-  criticalIssues: number;
-  highPriorityIssues: number;
-  mediumPriorityIssues: number;
-  lowPriorityIssues: number;
-}
-
-export interface StorageStats {
-  reportsCount: number;
-  batchResultsCount: number;
-  totalSize: number;
-  maxSize: number;
-  usagePercentage: number;
-  cacheEntries: number;
-}
-
-export interface ExportData {
-  reports: SEOReport[];
-  batchResults: BatchResults[];
   exportedAt: Date;
   version: string;
 }

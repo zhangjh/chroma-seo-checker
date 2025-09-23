@@ -15,16 +15,13 @@ module.exports = {
     background: 'src/background/background.ts',
     content: 'src/content/content.ts',
     popup: 'src/popup/popup.ts',
-    'detailed-report': 'src/popup/detailed-report.ts',
-    'batch-check': 'src/popup/batch-check.ts'
+    'detailed-report': 'src/popup/detailed-report.ts'
   },
 
   // Files to copy during build
   staticFiles: [
     { src: 'src/popup/popup.html', dest: 'dist/popup/popup.html' },
     { src: 'src/popup/popup.css', dest: 'dist/popup/popup.css' },
-    { src: 'src/popup/batch-check.html', dest: 'dist/popup/batch-check.html' },
-    { src: 'src/popup/batch-check.css', dest: 'dist/popup/batch-check.css' },
     { src: 'src/popup/detailed-report.html', dest: 'dist/popup/detailed-report.html' },
     { src: 'src/popup/detailed-report.css', dest: 'dist/popup/detailed-report.css' },
     { src: 'manifest.json', dest: 'dist/manifest.json' }

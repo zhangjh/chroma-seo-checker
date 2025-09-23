@@ -1,5 +1,4 @@
 import { SEOReport } from '../../types/seo';
-import { BatchResults } from '../background/storage-manager';
 
 /**
  * ReportGenerator handles the generation of SEO reports in various formats
@@ -12,12 +11,12 @@ export class ReportGenerator {
   /**
    * Generate a JSON report from SEO data
    */
-  async generateJSONReport(data: SEOReport | BatchResults, options: JSONReportOptions = {}): Promise<JSONReportData> {
+  async generateJSONReport(data: SEOReport, options: JSONReportOptions = {}): Promise<JSONReportData> {
     try {
       const reportData: JSONReportData = {
         version: ReportGenerator.REPORT_VERSION,
         generatedAt: new Date(),
-        type: this.isSeOReport(data) ? 'single' : 'batch',
+        type: 'single',
         data: this.formatDataForJSON(data, options),
         metadata: this.generateMetadata(data, options)
       };
@@ -42,7 +41,7 @@ export class ReportGenerator {
   /**
    * Generate a PDF report from SEO data
    */
-  async generatePDFReport(data: SEOReport | BatchResults, options: PDFReportOptions = {}): Promise<PDFReportData> {
+  async generatePDFReport(data: SEOReport, options: PDFReportOptions = {}): Promise<PDFReportData> {
     try {
       const htmlContent = await this.generateHTMLContent(data, options);
       const pdfBlob = await this.convertHTMLToPDF(htmlContent, options);
@@ -50,7 +49,7 @@ export class ReportGenerator {
       return {
         version: ReportGenerator.REPORT_VERSION,
         generatedAt: new Date(),
-        type: this.isSeOReport(data) ? 'single' : 'batch',
+        type: 'single',
         blob: pdfBlob,
         filename: this.generateFilename(data, 'pdf'),
         metadata: this.generateMetadata(data, options)
@@ -63,7 +62,7 @@ export class ReportGenerator {
   /**
    * Generate HTML content for PDF conversion or direct display
    */
-  async generateHTMLContent(data: SEOReport | BatchResults, options: ReportOptions = {}): Promise<string> {
+  async generateHTMLContent(data: SEOReport, options: ReportOptions = {}): Promise<string> {
     try {
       const template = options.template || 'default';
       const templateContent = await this.loadTemplate(template);
@@ -84,12 +83,8 @@ export class ReportGenerator {
   /**
    * Format SEO data for JSON export
    */
-  private formatDataForJSON(data: SEOReport | BatchResults, options: JSONReportOptions): any {
-    if (this.isSeOReport(data)) {
-      return this.formatSingleReportForJSON(data, options);
-    } else {
-      return this.formatBatchResultsForJSON(data, options);
-    }
+  private formatDataForJSON(data: SEOReport, options: JSONReportOptions): any {
+    return this.formatSingleReportForJSON(data, options);
   }
 
   /**
@@ -134,42 +129,18 @@ export class ReportGenerator {
     return formatted;
   }
 
-  /**
-   * Format batch results for JSON
-   */
-  private formatBatchResultsForJSON(batchResults: BatchResults, options: JSONReportOptions): BatchResultsJSON {
-    return {
-      id: batchResults.id,
-      urls: batchResults.urls,
-      summary: batchResults.summary,
-      createdAt: batchResults.createdAt,
-      completedAt: batchResults.completedAt,
-      status: batchResults.status,
-      reports: batchResults.results.map(report => 
-        this.formatSingleReportForJSON(report, options)
-      )
-    };
-  }
+
 
   /**
    * Format data for HTML display
    */
-  private formatDataForHTML(data: SEOReport | BatchResults, options: ReportOptions): any {
-    if (this.isSeOReport(data)) {
-      return {
-        type: 'single',
-        report: data,
-        charts: this.generateChartData(data),
-        recommendations: this.generateRecommendations(data)
-      };
-    } else {
-      return {
-        type: 'batch',
-        batchResults: data,
-        charts: this.generateBatchChartData(data),
-        recommendations: this.generateBatchRecommendations(data)
-      };
-    }
+  private formatDataForHTML(data: SEOReport, options: ReportOptions): any {
+    return {
+      type: 'single',
+      report: data,
+      charts: this.generateChartData(data),
+      recommendations: this.generateRecommendations(data)
+    };
   }
 
   /**
@@ -196,24 +167,7 @@ export class ReportGenerator {
     };
   }
 
-  /**
-   * Generate chart data for batch results
-   */
-  private generateBatchChartData(batchResults: BatchResults): BatchChartData {
-    const scores = batchResults.results.map(r => r.score.overall);
-    const avgScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-    
-    return {
-      scoreDistribution: this.calculateScoreDistribution(scores),
-      averageScores: {
-        overall: avgScore,
-        technical: batchResults.results.reduce((sum, r) => sum + r.score.technical, 0) / batchResults.results.length,
-        content: batchResults.results.reduce((sum, r) => sum + r.score.content, 0) / batchResults.results.length,
-        performance: batchResults.results.reduce((sum, r) => sum + r.score.performance, 0) / batchResults.results.length
-      },
-      issuesSummary: batchResults.summary
-    };
-  }
+
 
   /**
    * Calculate score distribution for batch results
@@ -267,27 +221,7 @@ export class ReportGenerator {
     return recommendations;
   }
 
-  /**
-   * Generate recommendations for batch results
-   */
-  private generateBatchRecommendations(batchResults: BatchResults): string[] {
-    const recommendations: string[] = [];
-    
-    if (batchResults.summary.criticalIssues > 0) {
-      recommendations.push(`Address ${batchResults.summary.criticalIssues} critical issues across all pages`);
-    }
-    
-    if (batchResults.summary.averageScore < 70) {
-      recommendations.push('Overall SEO performance needs improvement');
-    }
-    
-    const failedUrls = batchResults.summary.failedUrls;
-    if (failedUrls > 0) {
-      recommendations.push(`Re-check ${failedUrls} failed URLs`);
-    }
 
-    return recommendations;
-  }
 
   /**
    * Load HTML template for report generation
@@ -453,7 +387,7 @@ export class ReportGenerator {
   /**
    * Generate filename for report
    */
-  private generateFilename(data: SEOReport | BatchResults, format: 'pdf' | 'json'): string {
+  private generateFilename(data: SEOReport, format: 'pdf' | 'json'): string {
     const timestamp = new Date().toISOString().split('T')[0];
     
     if (this.isSeOReport(data)) {
@@ -467,7 +401,7 @@ export class ReportGenerator {
   /**
    * Generate metadata for report
    */
-  private generateMetadata(data: SEOReport | BatchResults, options: ReportOptions): ReportMetadata {
+  private generateMetadata(data: SEOReport, options: ReportOptions): ReportMetadata {
     return {
       generator: 'SEO Checker Extension',
       version: ReportGenerator.REPORT_VERSION,
@@ -515,7 +449,7 @@ export class ReportGenerator {
   /**
    * Type guard to check if data is SEOReport
    */
-  private isSeOReport(data: SEOReport | BatchResults): data is SEOReport {
+  private isSeOReport(data: SEOReport): data is SEOReport {
     return 'score' in data && 'issues' in data;
   }
 }
@@ -543,15 +477,15 @@ export interface PDFReportOptions extends ReportOptions {
 export interface JSONReportData {
   version: string;
   generatedAt: Date;
-  type: 'single' | 'batch';
-  data: SingleReportJSON | BatchResultsJSON;
+  type: 'single';
+  data: SingleReportJSON;
   metadata: ReportMetadata;
 }
 
 export interface PDFReportData {
   version: string;
   generatedAt: Date;
-  type: 'single' | 'batch';
+  type: 'single';
   blob: Blob;
   filename: string;
   metadata: ReportMetadata;
@@ -570,15 +504,7 @@ export interface SingleReportJSON {
   performanceResults?: any;
 }
 
-export interface BatchResultsJSON {
-  id: string;
-  urls: string[];
-  summary: any;
-  createdAt: Date;
-  completedAt?: Date;
-  status: string;
-  reports: SingleReportJSON[];
-}
+
 
 export interface IssueSummary {
   totalIssues: number;
@@ -607,16 +533,7 @@ export interface ChartData {
   };
 }
 
-export interface BatchChartData {
-  scoreDistribution: ScoreDistribution;
-  averageScores: {
-    overall: number;
-    technical: number;
-    content: number;
-    performance: number;
-  };
-  issuesSummary: any;
-}
+
 
 export interface ScoreDistribution {
   excellent: number; // 90-100

@@ -3,53 +3,56 @@
   "name": "SEO Checker - AI-Powered SEO Analysis",
   "version": "1.0.0",
   "description": "基于Chrome内置AI的智能SEO检查工具，提供实时SEO分析和优化建议",
-  
   "permissions": [
     "activeTab",
     "storage",
     "scripting",
     "downloads"
   ],
-  
   "host_permissions": [
     "http://*/*",
     "https://*/*"
   ],
-  
   "background": {
-    "service_worker": "src/background/background.js"
+    "service_worker": "background-simple.js"
   },
-  
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*"],
-      "js": ["src/content/content.js"],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "content-simple-standalone.js"
+      ],
       "run_at": "document_idle"
     }
   ],
-  
   "action": {
-    "default_popup": "src/popup/popup.html",
+    "default_popup": "dist/popup/popup.html",
     "default_title": "SEO Checker",
     "default_icon": {
-      "16": "src/icons/icon16.png",
-      "32": "src/icons/icon32.png",
-      "48": "src/icons/icon48.png",
-      "128": "src/icons/icon128.png"
+      "16": "dist/icons/icon16.png",
+      "32": "dist/icons/icon32.png",
+      "48": "dist/icons/icon48.png",
+      "128": "dist/icons/icon128.png"
     }
   },
-  
   "icons": {
-    "16": "src/icons/icon16.png",
-    "32": "src/icons/icon32.png",
-    "48": "src/icons/icon48.png",
-    "128": "src/icons/icon128.png"
+    "16": "dist/icons/icon16.png",
+    "32": "dist/icons/icon32.png",
+    "48": "dist/icons/icon48.png",
+    "128": "dist/icons/icon128.png"
   },
-  
   "web_accessible_resources": [
     {
-      "resources": ["src/reports/templates/*"],
-      "matches": ["http://*/*", "https://*/*"]
+      "resources": [
+        "dist/reports/templates/*"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ]
     }
   ]
 }

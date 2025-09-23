@@ -8,7 +8,6 @@ export interface PopupController {
   initializeUI(): void;
   displaySEOScore(score: SEOScore): void;
   showQuickReport(report: QuickReport): void;
-  handleBatchCheck(): void;
   exportReport(format: 'pdf' | 'json'): void;
 }
 
@@ -33,7 +32,6 @@ export interface ContentAnalyzer {
 export interface BackgroundService {
   processAnalysis(analysis: PageAnalysis): Promise<SEOReport>;
   callAIForContentSuggestions(content: string): Promise<AISuggestions>;
-  saveBatchResults(results: BatchResults): Promise<void>;
   generateReport(data: SEOReport): Promise<ReportData>;
 }
 
@@ -67,23 +65,7 @@ export interface SEOResults {
   performance: PerformanceResult;
 }
 
-// Batch Processing Interfaces
-export interface BatchResults {
-  id: string;
-  urls: string[];
-  results: SEOReport[];
-  summary: BatchSummary;
-  createdAt: Date;
-}
 
-export interface BatchSummary {
-  totalPages: number;
-  averageScore: number;
-  criticalIssues: number;
-  highPriorityIssues: number;
-  completedPages: number;
-  failedPages: number;
-}
 
 // Report Generation Interface
 export interface ReportData {
@@ -99,8 +81,6 @@ export interface StorageManager {
   getReport(id: string): Promise<SEOReport | null>;
   getAllReports(): Promise<SEOReport[]>;
   deleteReport(id: string): Promise<void>;
-  saveBatchResults(results: BatchResults): Promise<void>;
-  getBatchResults(id: string): Promise<BatchResults | null>;
 }
 
 // Error Handling Interfaces

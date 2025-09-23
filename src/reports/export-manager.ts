@@ -1,6 +1,5 @@
 import { ReportGenerator, JSONReportData, PDFReportData, JSONReportOptions, PDFReportOptions } from './report-generator';
 import { SEOReport } from '../../types/seo';
-import { BatchResults } from '../background/storage-manager';
 
 /**
  * ExportManager handles the export and sharing of SEO reports
@@ -59,37 +58,7 @@ export class ExportManager {
     }
   }
 
-  /**
-   * Export batch results as JSON file
-   */
-  async exportBatchResults(
-    batchResults: BatchResults,
-    sanitize: boolean = true
-  ): Promise<void> {
-    try {
-      const sanitizedResults = sanitize ? this.sanitizeBatchResults(batchResults) : batchResults;
-      
-      const exportData = {
-        id: sanitizedResults.id,
-        urls: sanitizedResults.urls,
-        createdAt: sanitizedResults.createdAt,
-        completedAt: sanitizedResults.completedAt,
-        status: sanitizedResults.status,
-        summary: sanitizedResults.summary,
-        results: sanitizedResults.results
-      };
-      
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
-        type: 'application/json' 
-      });
-      
-      const filename = `batch-seo-results-${sanitizedResults.id}-${Date.now()}.json`;
-      await this.downloadFile(blob, filename);
-    } catch (error) {
-      console.error('Failed to export batch results:', error);
-      throw new Error('导出批量结果失败');
-    }
-  }
+
 
   /**
    * Generate shareable link for report (placeholder for future implementation)
@@ -149,15 +118,7 @@ export class ExportManager {
     return sanitized;
   }
 
-  /**
-   * Sanitize batch results for privacy protection
-   */
-  private sanitizeBatchResults(batchResults: BatchResults): BatchResults {
-    return {
-      ...batchResults,
-      results: batchResults.results.map(report => this.sanitizeReport(report))
-    };
-  }
+
 
   /**
    * Sanitize text content to remove potential sensitive information

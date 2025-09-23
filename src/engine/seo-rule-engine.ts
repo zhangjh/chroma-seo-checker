@@ -43,6 +43,17 @@ export class SEORuleEngine {
   }
 
   /**
+   * Evaluate analysis and return scores and issues
+   */
+  evaluateAnalysis(analysis: PageAnalysis): { score: SEOScore; issues: SEOIssue[] } {
+    const categoryScores = this.scoringAlgorithm.calculateCategoryScores(analysis);
+    const score = this.scoringAlgorithm.calculateSEOScore(analysis);
+    const issues = this.scoringAlgorithm.generateSEOIssues(categoryScores);
+
+    return { score, issues };
+  }
+
+  /**
    * Perform comprehensive SEO analysis on a page
    */
   async analyzePage(analysis: PageAnalysis, aiSuggestions?: AISuggestions): Promise<SEOReport> {

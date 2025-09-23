@@ -66,9 +66,9 @@ async function build() {
       const staticFiles = [
         { src: 'src/popup/popup.html', dest: 'dist/popup/popup.html' },
         { src: 'src/popup/popup.css', dest: 'dist/popup/popup.css' },
-        { src: 'src/popup/batch-check.html', dest: 'dist/popup/batch-check.html' },
-        { src: 'src/popup/batch-check.css', dest: 'dist/popup/batch-check.css' },
-        { src: 'src/popup/detailed-report.html', dest: 'dist/popup/detailed-report.html' }
+        { src: 'src/popup/popup-simple.js', dest: 'dist/popup/popup-simple.js' },
+        { src: 'src/popup/detailed-report.html', dest: 'dist/popup/detailed-report.html' },
+        { src: 'src/background/background-simple.js', dest: 'background-simple.js' }
       ];
 
       const staticDirectories = [
@@ -126,13 +126,24 @@ async function build() {
         if (manifest.content_scripts) {
           manifest.content_scripts.forEach(script => {
             if (script.js) {
-              script.js = script.js.map(js => js.replace('src/', 'dist/src/'));
+              script.js = script.js.map(js => {
+                // If already has dist/src/, don't add another dist/
+                if (js.startsWith('dist/src/')) {
+                  return js;
+                }
+                return js.replace('src/', 'dist/src/');
+              });
             }
           });
         }
 
         if (manifest.background && manifest.background.service_worker) {
-          manifest.background.service_worker = manifest.background.service_worker.replace('src/', 'dist/src/');
+          // If already has dist/src/, don't add another dist/
+          if (manifest.background.service_worker.startsWith('dist/src/')) {
+            // Keep as is
+          } else {
+            manifest.background.service_worker = manifest.background.service_worker.replace('src/', 'dist/src/');
+          }
         }
 
         if (manifest.web_accessible_resources) {

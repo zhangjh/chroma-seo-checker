@@ -8,7 +8,7 @@ interface UIElements {
   error: HTMLElement;
   errorMessage: HTMLElement;
   mainContent: HTMLElement;
-  
+
   // Score elements
   overallScore: HTMLElement;
   technicalScore: HTMLElement;
@@ -17,18 +17,18 @@ interface UIElements {
   technicalFill: HTMLElement;
   contentFill: HTMLElement;
   performanceFill: HTMLElement;
-  
+
   // Summary elements
   criticalIssues: HTMLElement;
   highIssues: HTMLElement;
   totalIssues: HTMLElement;
   lastCheckedTime: HTMLElement;
-  
+
   // Issues elements
   issuesList: HTMLElement;
   noIssues: HTMLElement;
   filterTabs: NodeListOf<HTMLElement>;
-  
+
   // Suggestions elements
   suggestionsContent: HTMLElement;
   suggestionsStatus: HTMLElement;
@@ -36,13 +36,12 @@ interface UIElements {
   suggestionsLoading: HTMLElement;
   suggestionsList: HTMLElement;
   noSuggestions: HTMLElement;
-  
+
   // Action buttons
   refreshBtn: HTMLElement;
   retryBtn: HTMLElement;
   generateSuggestionsBtn: HTMLButtonElement;
   detailedReportBtn: HTMLElement;
-  batchCheckBtn: HTMLElement;
   exportBtn: HTMLElement;
 }
 
@@ -63,7 +62,7 @@ class PopupUI implements PopupController {
       error: document.getElementById('error')!,
       errorMessage: document.getElementById('error-message')!,
       mainContent: document.getElementById('main-content')!,
-      
+
       overallScore: document.getElementById('overall-score')!,
       technicalScore: document.getElementById('technical-score')!,
       contentScore: document.getElementById('content-score')!,
@@ -71,28 +70,27 @@ class PopupUI implements PopupController {
       technicalFill: document.getElementById('technical-fill')!,
       contentFill: document.getElementById('content-fill')!,
       performanceFill: document.getElementById('performance-fill')!,
-      
+
       criticalIssues: document.getElementById('critical-issues')!,
       highIssues: document.getElementById('high-issues')!,
       totalIssues: document.getElementById('total-issues')!,
       lastCheckedTime: document.getElementById('last-checked-time')!,
-      
+
       issuesList: document.getElementById('issues-list')!,
       noIssues: document.getElementById('no-issues')!,
       filterTabs: document.querySelectorAll('.tab-btn'),
-      
+
       suggestionsContent: document.getElementById('suggestions-content')!,
       suggestionsStatus: document.getElementById('suggestions-status')!,
       suggestionsStatusText: document.getElementById('suggestions-status-text')!,
       suggestionsLoading: document.getElementById('suggestions-loading')!,
       suggestionsList: document.getElementById('suggestions-list')!,
       noSuggestions: document.getElementById('no-suggestions')!,
-      
+
       refreshBtn: document.getElementById('refresh-btn')!,
       retryBtn: document.getElementById('retry-btn')!,
       generateSuggestionsBtn: document.getElementById('generate-suggestions')! as HTMLButtonElement,
       detailedReportBtn: document.getElementById('detailed-report-btn')!,
-      batchCheckBtn: document.getElementById('batch-check-btn')!,
       exportBtn: document.getElementById('export-btn')!,
     };
   }
@@ -127,40 +125,43 @@ class PopupUI implements PopupController {
       this.openDetailedReport();
     });
 
-    this.elements.batchCheckBtn.addEventListener('click', () => {
-      this.handleBatchCheck();
-    });
-
     this.elements.exportBtn.addEventListener('click', () => {
       this.showExportOptions();
     });
   }
 
   public initializeUI(): void {
+    console.log('SEO Checker: Initializing UI');
     this.showLoading();
     this.loadCurrentPageAnalysis();
   }
 
   private async loadCurrentPageAnalysis(): Promise<void> {
     try {
+      console.log('SEO Checker: Loading current page analysis');
+
       // Get current tab
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
+      console.log('SEO Checker: Current tab:', tab);
+
       if (!tab.id) {
         throw new Error('无法获取当前标签页');
       }
 
       // Request analysis from background script
+      console.log('SEO Checker: Requesting analysis from background script');
       const response = await chrome.runtime.sendMessage({
         action: 'getPageAnalysis',
         tabId: tab.id
       });
+      console.log('SEO Checker: Background response:', response);
 
       if (response.error) {
         throw new Error(response.error);
       }
 
       if (response.report) {
+        console.log('SEO Checker: Found cached report, displaying results');
         this.displaySEOScore(response.report.score);
         this.showQuickReport({
           score: response.report.score,
@@ -170,11 +171,12 @@ class PopupUI implements PopupController {
           lastChecked: new Date(response.report.timestamp)
         });
         this.displayIssues(response.report.issues);
-        
+
         if (response.report.suggestions) {
           this.displaySuggestions(response.report.suggestions);
         }
       } else {
+        console.log('SEO Checker: No cached analysis found, triggering new analysis');
         // No cached analysis, trigger new analysis
         this.triggerNewAnalysis(tab.id);
       }
@@ -186,19 +188,22 @@ class PopupUI implements PopupController {
 
   private async triggerNewAnalysis(tabId: number): Promise<void> {
     try {
+      console.log('SEO Checker: Triggering new analysis for tab:', tabId);
       const response = await chrome.runtime.sendMessage({
         action: 'analyzeCurrentPage',
         tabId: tabId
       });
+      console.log('SEO Checker: Analysis trigger response:', response);
 
       if (response.error) {
         throw new Error(response.error);
       }
 
       // Analysis started, wait for completion
+      console.log('SEO Checker: Analysis started, waiting for completion');
       this.waitForAnalysisCompletion(tabId);
     } catch (error) {
-      console.error('Failed to trigger analysis:', error);
+      console.error('SEO Checker: Failed to trigger analysis:', error);
       this.showError(error instanceof Error ? error.message : '启动分析失败');
     }
   }
@@ -320,15 +325,15 @@ class PopupUI implements PopupController {
     this.elements.suggestionsList.innerHTML = '';
 
     const suggestionItems = [
-      { 
-        title: '标题优化', 
+      {
+        title: '标题优化',
         text: suggestions.titleOptimization,
         type: 'title-optimization',
         icon: '📝',
         confidence: 'high'
       },
-      { 
-        title: 'Meta描述建议', 
+      {
+        title: 'Meta描述建议',
         text: suggestions.metaDescriptionSuggestion,
         type: 'meta-description',
         icon: '📄',
@@ -396,7 +401,7 @@ class PopupUI implements PopupController {
           </div>
         </div>
       `;
-      
+
       this.elements.suggestionsList.appendChild(suggestionElement);
       this.attachSuggestionEventListeners(suggestionElement, item, index);
     });
@@ -466,9 +471,9 @@ class PopupUI implements PopupController {
   private async applySuggestion(item: any): Promise<void> {
     try {
       this.showSuggestionsStatus('正在应用建议...', 'info');
-      
+
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
+
       const response = await chrome.runtime.sendMessage({
         action: 'applySuggestion',
         tabId: tab.id,
@@ -485,14 +490,14 @@ class PopupUI implements PopupController {
       console.error('Failed to apply suggestion:', error);
       this.showSuggestionsStatus('应用建议失败，请手动修改', 'error');
     }
-    
+
     setTimeout(() => this.hideSuggestionsStatus(), 3000);
   }
 
   private toggleSuggestionPreview(index: number, item: any): void {
     const preview = document.getElementById(`preview-${index}`) as HTMLElement;
     const previewContent = preview.querySelector('.suggestion-preview-content') as HTMLElement;
-    
+
     if (preview.classList.contains('show')) {
       preview.classList.remove('show');
     } else {
@@ -522,7 +527,7 @@ class PopupUI implements PopupController {
         suggestionIndex: index,
         feedback: feedback
       });
-      
+
       // Visual feedback
       const feedbackBtns = document.querySelectorAll(`[data-index="${index}"].feedback-btn`) as NodeListOf<HTMLButtonElement>;
       feedbackBtns.forEach(btn => {
@@ -542,7 +547,7 @@ class PopupUI implements PopupController {
   private showSuggestionsStatus(message: string, type: 'info' | 'success' | 'error'): void {
     this.elements.suggestionsStatus.className = `suggestions-status ${type}`;
     this.elements.suggestionsStatusText.textContent = message;
-    
+
     const statusIcon = this.elements.suggestionsStatus.querySelector('.status-icon') as HTMLElement;
     switch (type) {
       case 'success':
@@ -554,7 +559,7 @@ class PopupUI implements PopupController {
       default:
         statusIcon.textContent = 'ℹ️';
     }
-    
+
     this.elements.suggestionsStatus.classList.remove('hidden');
   }
 
@@ -570,13 +575,13 @@ class PopupUI implements PopupController {
 
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
+
       if (!tab.id) {
         throw new Error('无法获取当前标签页');
       }
 
       this.showSuggestionsStatus('正在生成AI建议...', 'info');
-      
+
       const response = await chrome.runtime.sendMessage({
         action: 'generateAISuggestions',
         tabId: tab.id
@@ -594,7 +599,7 @@ class PopupUI implements PopupController {
     } catch (error) {
       console.error('Failed to generate suggestions:', error);
       this.showSuggestionsStatus('生成AI建议失败', 'error');
-      
+
       // Show error in suggestions area
       this.elements.suggestionsList.innerHTML = `
         <div class="suggestion-item" style="border-left-color: #dc3545;">
@@ -612,7 +617,7 @@ class PopupUI implements PopupController {
       `;
       this.elements.suggestionsList.style.display = 'block';
       this.elements.noSuggestions.style.display = 'none';
-      
+
       setTimeout(() => this.hideSuggestionsStatus(), 5000);
     } finally {
       this.elements.suggestionsLoading.classList.add('hidden');
@@ -621,19 +626,10 @@ class PopupUI implements PopupController {
     }
   }
 
-  public handleBatchCheck(): void {
-    // Open batch check interface in new window
-    chrome.windows.create({
-      url: chrome.runtime.getURL('src/popup/batch-check.html'),
-      type: 'popup',
-      width: 650,
-      height: 750,
-      focused: true
-    });
-  }
+
 
   public exportReport(format: 'pdf' | 'json' = 'pdf', sanitize: boolean = true): void {
-    chrome.runtime.sendMessage({ 
+    chrome.runtime.sendMessage({
       action: 'exportReport',
       format: format,
       sanitize: sanitize
@@ -644,10 +640,10 @@ class PopupUI implements PopupController {
     // Create export options modal
     const modal = this.createExportModal();
     document.body.appendChild(modal);
-    
+
     // Show modal
     modal.classList.add('show');
-    
+
     // Handle modal close
     const closeModal = () => {
       modal.classList.remove('show');
@@ -655,14 +651,14 @@ class PopupUI implements PopupController {
         document.body.removeChild(modal);
       }, 300);
     };
-    
+
     // Close on backdrop click
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         closeModal();
       }
     });
-    
+
     // Close on escape key
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -676,7 +672,7 @@ class PopupUI implements PopupController {
   private createExportModal(): HTMLElement {
     const modal = document.createElement('div');
     modal.className = 'export-modal';
-    
+
     modal.innerHTML = `
       <div class="export-modal-content">
         <div class="export-modal-header">
@@ -732,12 +728,12 @@ class PopupUI implements PopupController {
         </div>
       </div>
     `;
-    
+
     // Add event listeners
     const closeBtn = modal.querySelector('.close-btn') as HTMLButtonElement;
     const cancelBtn = modal.querySelector('.cancel-btn') as HTMLButtonElement;
     const exportBtn = modal.querySelector('.export-confirm-btn') as HTMLButtonElement;
-    
+
     const closeModal = () => {
       modal.classList.remove('show');
       setTimeout(() => {
@@ -746,36 +742,36 @@ class PopupUI implements PopupController {
         }
       }, 300);
     };
-    
+
     closeBtn.addEventListener('click', closeModal);
     cancelBtn.addEventListener('click', closeModal);
-    
+
     exportBtn.addEventListener('click', () => {
       const formatRadios = modal.querySelectorAll('input[name="format"]') as NodeListOf<HTMLInputElement>;
       const sanitizeCheckbox = modal.querySelector('#sanitize-data') as HTMLInputElement;
-      
+
       let selectedFormat: 'pdf' | 'json' = 'pdf';
       formatRadios.forEach(radio => {
         if (radio.checked) {
           selectedFormat = radio.value as 'pdf' | 'json';
         }
       });
-      
+
       const sanitize = sanitizeCheckbox.checked;
-      
+
       // Show loading state
       exportBtn.disabled = true;
       exportBtn.textContent = '导出中...';
-      
+
       // Perform export
       this.exportReport(selectedFormat, sanitize);
-      
+
       // Close modal after a short delay
       setTimeout(() => {
         closeModal();
       }, 1000);
     });
-    
+
     return modal;
   }
 
@@ -803,7 +799,7 @@ class PopupUI implements PopupController {
     // For now, just log the issue details
     // In a more complete implementation, this could open a modal or detailed view
     console.log('Issue details:', issue);
-    
+
     // Simple alert for demonstration
     alert(`${issue.title}\n\n${issue.description}\n\n推荐: ${issue.recommendation}`);
   }
@@ -850,7 +846,7 @@ class PopupUI implements PopupController {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / 60000);
-    
+
     if (minutes < 1) {
       return '刚刚';
     } else if (minutes < 60) {
