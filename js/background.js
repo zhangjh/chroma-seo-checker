@@ -1,5 +1,8 @@
 // SEO Checker Background Service Worker
 
+// Import enhanced rules engine
+importScripts('enhanced-seo-rules.js');
+
 // Simple storage manager
 class SimpleStorageManager {
   async saveReport(report) {
@@ -150,7 +153,7 @@ class SimpleBackgroundService {
       
       try {
         // Trigger content script analysis
-        const contentResponse = await chrome.tabs.sendMessage(tabId, { type: 'START_ANALYSIS' });
+        await chrome.tabs.sendMessage(tabId, { type: 'START_ANALYSIS' });
       } catch (contentError) {
         this.analysisStatus.set(tabId, { status: 'failed', startTime: Date.now() });
         throw new Error('无法与页面内容脚本通信，请刷新页面后重试');
@@ -244,7 +247,7 @@ class SimpleBackgroundService {
       }
 
       // Convert analysis to SEO report
-      const report = this.convertAnalysisToReport(analysis, sender.tab);
+      const report = this.convertAnalysisToReport(analysis);
       
       // Save report to storage
       await this.storageManager.saveReport(report);
@@ -304,10 +307,18 @@ class SimpleBackgroundService {
     }
   }
 
-  convertAnalysisToReport(analysis, tab) {
-    // Simple scoring algorithm
-    const score = this.calculateSimpleScore(analysis);
-    const issues = this.generateSimpleIssues(analysis);
+  convertAnalysisToReport(analysis) {
+    console.log('[Background] Converting analysis to report...');
+    console.log('[Background] Analysis data:', analysis);
+    
+    try {
+      // Use enhanced scoring algorithm
+      const enhancedRules = new EnhancedSEORules();
+      const score = enhancedRules.calculateEnhancedScore(analysis);
+      const issues = enhancedRules.generateDetailedIssues(analysis);
+      
+      console.log('[Background] Score calculated:', score);
+      console.log('[Background] Issues found:', issues.length);
     
     const report = {
       id: this.generateReportId(),
@@ -395,81 +406,21 @@ class SimpleBackgroundService {
       }
     };
 
-    return report;
+      console.log('[Background] Report generated successfully');
+      return report;
+    } catch (error) {
+      console.error('[Background] Error converting analysis to report:', error);
+      throw error;
+    }
   }
 
-  calculateSimpleScore(analysis) {
-    let technical = 80;
-    let content = 75;
-    let performance = 70;
 
-    // Simple scoring logic
-    if (!analysis.metaTags?.title) technical -= 20;
-    if (!analysis.metaTags?.description) technical -= 15;
-    if ((analysis.headings?.h1?.length || 0) === 0) technical -= 10;
-    if ((analysis.headings?.h1?.length || 0) > 1) technical -= 5;
-
-    if ((analysis.content?.wordCount || 0) < 300) content -= 20;
-    if ((analysis.images?.imagesWithoutAlt || 0) > 0) content -= 10;
-
-    if ((analysis.images?.totalImages || 0) > 20) performance -= 15;
-    if ((analysis.performance?.pageSize || 0) > 1000000) performance -= 10;
-
-    const overall = Math.round((technical + content + performance) / 3);
-
-    return {
-      overall: Math.max(0, overall),
-      technical: Math.max(0, technical),
-      content: Math.max(0, content),
-      performance: Math.max(0, performance)
-    };
-  }
-
-  generateSimpleIssues(analysis) {
-    const issues = [];
-
-    if (!analysis.metaTags?.title) {
-      issues.push({
-        title: '缺少页面标题',
-        description: '页面没有title标签，这对SEO非常重要',
-        severity: 'critical',
-        recommendation: '添加描述性的页面标题'
-      });
-    }
-
-    if (!analysis.metaTags?.description) {
-      issues.push({
-        title: '缺少Meta描述',
-        description: '页面没有meta description，影响搜索结果显示',
-        severity: 'high',
-        recommendation: '添加150-160字符的meta描述'
-      });
-    }
-
-    if ((analysis.headings?.h1?.length || 0) === 0) {
-      issues.push({
-        title: '缺少H1标题',
-        description: '页面没有H1标题，影响内容结构',
-        severity: 'high',
-        recommendation: '添加一个主要的H1标题'
-      });
-    }
-
-    if ((analysis.images?.imagesWithoutAlt || 0) > 0) {
-      issues.push({
-        title: '图片缺少Alt属性',
-        description: `发现${analysis.images.imagesWithoutAlt}张图片没有alt属性`,
-        severity: 'medium',
-        recommendation: '为所有图片添加描述性的alt属性'
-      });
-    }
-
-    return issues;
-  }
 
   generateReportId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    return Date.now().toString(36) + Math.random().toString(36).substring(2);
   }
+
+
 }
 
 // Initialize the background service

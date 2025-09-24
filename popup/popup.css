@@ -6,7 +6,7 @@
 }
 
 body {
-    width: 380px;
+    width: 420px;
     min-height: 500px;
     margin: 0;
     padding: 0;
@@ -521,12 +521,18 @@ body {
 .issue-item {
     padding: 12px 20px;
     border-bottom: 1px solid #f1f3f4;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
 }
 
 .issue-item:hover {
     background: #f8f9fa;
+    border-left-color: #007bff;
+}
+
+.issue-item.expanded {
+    background: #f8f9ff;
+    border-left-color: #007bff;
 }
 
 .issue-item:last-child {
@@ -537,7 +543,27 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 4px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.issue-summary {
+    margin-top: 8px;
+    padding-left: 4px;
+}
+
+.issue-details {
+    margin-top: 12px;
+    padding: 12px;
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.issue-details.hidden {
+    display: none;
 }
 
 .severity-badge {
@@ -547,6 +573,7 @@ body {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    flex-shrink: 0;
 }
 
 .severity-badge.critical {
@@ -574,12 +601,163 @@ body {
     font-weight: 500;
     color: #495057;
     flex: 1;
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+.issue-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.locate-btn {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #495057;
+}
+
+.locate-btn:hover {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.issue-expand {
+    font-size: 12px;
+    color: #6c757d;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
 }
 
 .issue-description {
     font-size: 12px;
+    color: #495057;
+    line-height: 1.4;
+    margin-bottom: 4px;
+    font-weight: 500;
+    word-break: break-word;
+}
+
+.issue-location {
+    font-size: 11px;
     color: #6c757d;
-    line-height: 1.3;
+    background: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 3px;
+    display: inline-block;
+}
+
+.issue-current {
+    margin-bottom: 6px;
+    color: #dc3545;
+}
+
+.issue-current::before {
+    content: "❌ ";
+    margin-right: 4px;
+}
+
+.issue-expected {
+    margin-bottom: 6px;
+    color: #28a745;
+}
+
+.issue-expected::before {
+    content: "✅ ";
+    margin-right: 4px;
+}
+
+.issue-impact {
+    margin-bottom: 8px;
+    color: #fd7e14;
+    font-style: italic;
+}
+
+.issue-impact::before {
+    content: "⚠️ ";
+    margin-right: 4px;
+}
+
+.issue-recommendation {
+    padding: 12px;
+    background: #e3f2fd;
+    border-left: 3px solid #2196f3;
+    border-radius: 4px;
+    color: #1565c0;
+    white-space: pre-line;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
+    line-height: 1.5;
+}
+
+.issue-recommendation strong {
+    color: #0d47a1;
+    font-weight: 600;
+}
+
+.issue-recommendation code,
+.issue-recommendation pre {
+    background: #ffffff;
+    border: 1px solid #bbdefb;
+    border-radius: 3px;
+    padding: 4px 6px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #d32f2f;
+    display: inline-block;
+    margin: 2px 0;
+}
+
+/* 代码块样式 */
+.issue-recommendation {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.issue-recommendation::-webkit-scrollbar {
+    width: 4px;
+}
+
+.issue-recommendation::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.issue-recommendation::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 2px;
+}
+
+.recommendation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.copy-code-btn {
+    background: #ffffff;
+    border: 1px solid #2196f3;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #2196f3;
+}
+
+.copy-code-btn:hover {
+    background: #2196f3;
+    color: white;
+}
+
+.recommendation-content {
+    font-size: 12px;
+    line-height: 1.6;
 }
 
 .no-issues {
@@ -862,9 +1040,9 @@ body {
 }
 
 /* Responsive adjustments */
-@media (max-width: 400px) {
+@media (max-width: 440px) {
     body {
-        width: 320px;
+        width: 380px;
     }
     
     .header {
@@ -887,6 +1065,12 @@ body {
     .issue-item {
         padding-left: 16px;
         padding-right: 16px;
+    }
+}
+
+@media (max-width: 400px) {
+    body {
+        width: 320px;
     }
 }/* Export 
 Modal Styles */

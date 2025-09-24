@@ -14,14 +14,14 @@ class SimplePopupUI {
       error: document.getElementById('error'),
       errorMessage: document.getElementById('error-message'),
       mainContent: document.getElementById('main-content'),
-      
+
       // Progress elements
       loadingMessage: document.getElementById('loading-message'),
       progressFill: document.getElementById('progress-fill'),
       progressText: document.getElementById('progress-text'),
       currentStep: document.getElementById('current-step'),
       stepCounter: document.getElementById('step-counter'),
-      
+
       overallScore: document.getElementById('overall-score'),
       technicalScore: document.getElementById('technical-score'),
       contentScore: document.getElementById('content-score'),
@@ -29,22 +29,22 @@ class SimplePopupUI {
       technicalFill: document.getElementById('technical-fill'),
       contentFill: document.getElementById('content-fill'),
       performanceFill: document.getElementById('performance-fill'),
-      
+
       criticalIssues: document.getElementById('critical-issues'),
       highIssues: document.getElementById('high-issues'),
       totalIssues: document.getElementById('total-issues'),
-      
+
       issuesList: document.getElementById('issues-list'),
       noIssues: document.getElementById('no-issues'),
       filterTabs: document.querySelectorAll('.tab-btn'),
-      
+
       suggestionsContent: document.getElementById('suggestions-content'),
       suggestionsStatus: document.getElementById('suggestions-status'),
       suggestionsStatusText: document.getElementById('suggestions-status-text'),
       suggestionsLoading: document.getElementById('suggestions-loading'),
       suggestionsList: document.getElementById('suggestions-list'),
       noSuggestions: document.getElementById('no-suggestions'),
-      
+
       refreshBtn: document.getElementById('refresh-btn'),
       retryBtn: document.getElementById('retry-btn'),
       generateSuggestionsBtn: document.getElementById('generate-suggestions'),
@@ -114,7 +114,7 @@ class SimplePopupUI {
       } catch (pingError) {
         throw new Error('后台脚本无响应，请重新加载扩展');
       }
-      
+
       // Get current tab
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
@@ -172,14 +172,14 @@ class SimplePopupUI {
     try {
       // 显示初始进度
       this.updateProgress({ step: 1, message: '正在启动SEO分析...', progress: 5 });
-      
+
       // 测试content脚本是否可用
       try {
         await chrome.tabs.sendMessage(tabId, { type: 'PING' });
       } catch (contentError) {
         throw new Error('页面内容脚本未加载，请刷新页面后重试');
       }
-      
+
       const response = await chrome.runtime.sendMessage({
         action: 'analyzeCurrentPage',
         tabId: tabId
@@ -205,18 +205,18 @@ class SimplePopupUI {
       { step: 5, message: '正在分析图片和性能...', progress: 85 },
       { step: 6, message: '正在生成分析报告...', progress: 95 }
     ];
-    
+
     let currentStepIndex = 0;
     let checkCount = 0;
     const maxChecks = 15; // 最多检查15次 (30秒)
-    
+
     // 开始显示进度
     this.updateProgress(steps[0]);
-    
+
     const checkInterval = setInterval(async () => {
       try {
         checkCount++;
-        
+
         const response = await chrome.runtime.sendMessage({
           action: 'getAnalysisStatus',
           tabId: tabId
@@ -224,10 +224,10 @@ class SimplePopupUI {
 
         if (response.completed && response.report) {
           clearInterval(checkInterval);
-          
+
           // 显示完成状态
           this.updateProgress({ step: 6, message: '分析完成！', progress: 100 });
-          
+
           // 短暂延迟后显示结果
           setTimeout(() => {
             this.displaySEOScore(response.report.score);
@@ -245,13 +245,13 @@ class SimplePopupUI {
         } else if (checkCount >= maxChecks) {
           // 检查次数达到上限，尝试获取缓存的报告
           clearInterval(checkInterval);
-          
+
           try {
             const cachedResponse = await chrome.runtime.sendMessage({
               action: 'getPageAnalysis',
               tabId: tabId
             });
-            
+
             if (cachedResponse.report) {
               this.updateProgress({ step: 6, message: '分析完成！', progress: 100 });
               setTimeout(() => {
@@ -295,19 +295,19 @@ class SimplePopupUI {
     if (this.elements.progressFill) {
       this.elements.progressFill.style.width = `${stepInfo.progress}%`;
     }
-    
+
     if (this.elements.progressText) {
       this.elements.progressText.textContent = `${stepInfo.progress}%`;
     }
-    
+
     if (this.elements.currentStep) {
       this.elements.currentStep.textContent = stepInfo.message;
     }
-    
+
     if (this.elements.stepCounter) {
       this.elements.stepCounter.textContent = `第 ${stepInfo.step} 步，共 6 步`;
     }
-    
+
   }
 
   displaySEOScore(score) {
@@ -365,7 +365,28 @@ class SimplePopupUI {
 
   displayIssues(issues) {
     this.currentIssues = issues;
+    // 为每个问题添加原始索引
+    this.currentIssues.forEach((issue, index) => {
+      issue.originalIndex = index;
+    });
     this.filterIssues(this.currentFilter);
+
+    // 自动在页面上高亮显示问题
+    this.highlightIssuesOnPage(issues);
+  }
+
+  async highlightIssuesOnPage(issues) {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab.id) {
+        await chrome.tabs.sendMessage(tab.id, {
+          type: 'HIGHLIGHT_ISSUES',
+          issues: issues
+        });
+      }
+    } catch (error) {
+      // 静默失败，不影响主功能
+    }
   }
 
   filterIssues(filter) {
@@ -395,23 +416,102 @@ class SimplePopupUI {
 
   renderIssuesList(issues) {
     if (!this.elements.issuesList) return;
-    
+
     this.elements.issuesList.innerHTML = '';
 
-    issues.forEach(issue => {
+    issues.forEach((issue, displayIndex) => {
       const issueElement = document.createElement('div');
       issueElement.className = 'issue-item';
+
+      // 使用预先设置的原始索引
+      const originalIndex = issue.originalIndex !== undefined ? issue.originalIndex : displayIndex;
+
+      // 构建详细的问题信息
+      const locationInfo = issue.location ? `<span class="issue-location">位置: ${issue.location}</span>` : '';
+      const currentValueInfo = issue.currentValue ? `<div class="issue-current">当前: ${issue.currentValue}</div>` : '';
+      const expectedValueInfo = issue.expectedValue ? `<div class="issue-expected">建议: ${issue.expectedValue}</div>` : '';
+      const impactInfo = issue.impact ? `<div class="issue-impact">影响: ${issue.impact}</div>` : '';
+
+
+
       issueElement.innerHTML = `
         <div class="issue-header">
           <span class="severity-badge ${issue.severity}">${this.getSeverityText(issue.severity)}</span>
           <span class="issue-title">${issue.title}</span>
+          <div class="issue-actions">
+            <button class="locate-btn" title="在页面上定位" data-issue-id="${issue.id}" data-original-index="${originalIndex}">🎯</button>
+            <span class="issue-expand">▼</span>
+          </div>
         </div>
-        <div class="issue-description">${issue.description}</div>
+        <div class="issue-summary">
+          <div class="issue-description">${issue.description}</div>
+          ${locationInfo}
+        </div>
+        <div class="issue-details hidden">
+          ${currentValueInfo}
+          ${expectedValueInfo}
+          ${impactInfo}
+          <div class="issue-recommendation">
+            <div class="recommendation-header">
+              <strong>解决方案:</strong>
+              <button class="copy-code-btn" title="复制代码">📋</button>
+            </div>
+            <div class="recommendation-content">${issue.recommendation}</div>
+          </div>
+        </div>
       `;
 
-      issueElement.addEventListener('click', () => {
-        this.showIssueDetails(issue);
+      // 添加展开/收起功能
+      const header = issueElement.querySelector('.issue-header');
+      const details = issueElement.querySelector('.issue-details');
+      const expandIcon = issueElement.querySelector('.issue-expand');
+
+      header.addEventListener('click', () => {
+        const isExpanded = !details.classList.contains('hidden');
+        if (isExpanded) {
+          details.classList.add('hidden');
+          expandIcon.textContent = '▼';
+          issueElement.classList.remove('expanded');
+        } else {
+          details.classList.remove('hidden');
+          expandIcon.textContent = '▲';
+          issueElement.classList.add('expanded');
+        }
       });
+
+      // 添加复制代码功能
+      const copyBtn = issueElement.querySelector('.copy-code-btn');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.copyRecommendationCode(issue.recommendation);
+          copyBtn.textContent = '✅';
+          setTimeout(() => {
+            copyBtn.textContent = '📋';
+          }, 2000);
+        });
+      }
+
+      // 添加定位功能
+      const locateBtn = issueElement.querySelector('.locate-btn');
+      if (locateBtn) {
+        locateBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const issueId = locateBtn.getAttribute('data-issue-id');
+          const originalIdx = parseInt(locateBtn.getAttribute('data-original-index'));
+
+          try {
+            await this.locateIssueOnPage(originalIdx);
+            locateBtn.textContent = '✅';
+          } catch (error) {
+            locateBtn.textContent = '❌';
+          }
+
+          setTimeout(() => {
+            locateBtn.textContent = '🎯';
+          }, 2000);
+        });
+      }
 
       this.elements.issuesList.appendChild(issueElement);
     });
@@ -451,9 +551,7 @@ class SimplePopupUI {
     });
   }
 
-  showIssueDetails(issue) {
-    alert(`${issue.title}\n\n${issue.description}\n\n推荐: ${issue.recommendation || '无'}`);
-  }
+
 
   showLoading() {
     if (this.elements.loading) {
@@ -465,7 +563,7 @@ class SimplePopupUI {
     if (this.elements.mainContent) {
       this.elements.mainContent.classList.add('hidden');
     }
-    
+
     // 重置进度显示
     this.updateProgress({ step: 0, message: '准备开始分析...', progress: 0 });
   }
@@ -500,7 +598,7 @@ class SimplePopupUI {
   updateScoreColor(element, score) {
     // 移除所有颜色类
     element.classList.remove('warning', 'danger', 'excellent', 'good', 'average', 'poor');
-    
+
     // 根据分数添加对应的颜色类
     if (score >= 80) {
       element.classList.add('excellent');
@@ -516,7 +614,7 @@ class SimplePopupUI {
   updateProgressBarColor(element, score) {
     // 移除所有颜色类
     element.classList.remove('excellent', 'good', 'average', 'poor');
-    
+
     // 根据分数设置颜色类
     let colorClass;
     if (score >= 80) {
@@ -528,24 +626,24 @@ class SimplePopupUI {
     } else {
       colorClass = 'poor';
     }
-    
+
     element.classList.add(colorClass);
-    
+
     // 设置内联样式作为备用
     const colors = {
       excellent: '#28a745',
-      good: '#007bff', 
+      good: '#007bff',
       average: '#fd7e14',
       poor: '#dc3545'
     };
-    
+
     element.style.setProperty('background-color', colors[colorClass], 'important');
   }
 
   updateScoreNumberColor(element, score) {
     // 移除所有颜色类
     element.classList.remove('excellent', 'good', 'average', 'poor');
-    
+
     // 根据分数添加对应的颜色类和样式
     if (score >= 80) {
       element.classList.add('excellent');
@@ -574,6 +672,42 @@ class SimplePopupUI {
       low: '低'
     };
     return severityMap[severity] || severity;
+  }
+
+  copyRecommendationCode(recommendation) {
+    // 提取代码部分（在<>标签之间的内容）
+    const codeMatches = recommendation.match(/<[^>]+>/g);
+    let textToCopy = recommendation;
+
+    if (codeMatches && codeMatches.length > 0) {
+      // 如果有HTML代码，只复制代码部分
+      textToCopy = codeMatches.join('\n');
+    }
+
+    // 复制到剪贴板
+    navigator.clipboard.writeText(textToCopy).catch(() => {
+      // 降级方案
+      const textArea = document.createElement('textarea');
+      textArea.value = textToCopy;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+    });
+  }
+
+  async locateIssueOnPage(issueIndex) {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab.id) {
+        await chrome.tabs.sendMessage(tab.id, {
+          type: 'SCROLL_TO_ISSUE',
+          issueIndex: issueIndex
+        });
+      }
+    } catch (error) {
+      // 静默失败
+    }
   }
 
 

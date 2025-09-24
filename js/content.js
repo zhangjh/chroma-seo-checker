@@ -1,82 +1,93 @@
 // SEO Checker Content Script
 
+// 初始化页面高亮器
+let pageHighlighter = null;
+
 // Set up message listener immediately
 if (typeof chrome !== 'undefined' && chrome.runtime) {
   try {
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       if (message.type === 'PING') {
         sendResponse({ success: true, message: 'Content script ready' });
         return true;
       }
       
       if (message.type === 'START_ANALYSIS') {
-        // Perform quick analysis and send result
+        console.log('[Content] Starting SEO analysis...');
+        
+        // Perform analysis and send result
         setTimeout(async () => {
           try {
-            // Simple page analysis
-            const title = document.title || '';
-            const metaDescription = document.querySelector('meta[name="description"]')?.getAttribute('content') || '';
-            const h1Elements = document.querySelectorAll('h1');
-            const images = document.querySelectorAll('img');
+            console.log('[Content] Creating analyzer...');
             
-            // Count images without alt
-            let imagesWithoutAlt = 0;
-            images.forEach(img => {
-              if (!img.getAttribute('alt')) {
-                imagesWithoutAlt++;
-              }
-            });
+            // Use enhanced analyzer
+            const analyzer = new EnhancedContentAnalyzer();
             
-            const analysis = {
-              url: window.location.href,
-              timestamp: new Date().toISOString(),
-              metaTags: {
-                title: title,
-                titleLength: title.length,
-                description: metaDescription,
-                descriptionLength: metaDescription.length,
-                keywords: document.querySelector('meta[name="keywords"]')?.getAttribute('content') || '',
-                canonical: document.querySelector('link[rel="canonical"]')?.getAttribute('href') || '',
-                robots: document.querySelector('meta[name="robots"]')?.getAttribute('content') || '',
-                ogTags: {},
-                twitterTags: {}
-              },
-              headings: {
-                h1: Array.from(h1Elements).map(h => h.textContent?.trim() || ''),
-                h2: Array.from(document.querySelectorAll('h2')).map(h => h.textContent?.trim() || ''),
-                h3: Array.from(document.querySelectorAll('h3')).map(h => h.textContent?.trim() || '')
-              },
-              content: {
-                wordCount: (document.body.textContent || '').trim().split(/\s+/).length,
-                paragraphCount: document.querySelectorAll('p').length,
-                listCount: document.querySelectorAll('ul, ol').length,
-                internalLinks: 5,
-                externalLinks: 3,
-                textToHtmlRatio: 25
-              },
-              images: {
-                totalImages: images.length,
-                imagesWithoutAlt: imagesWithoutAlt,
-                imageFormats: { 'png': 1, 'jpg': 1 }
-              },
-              performance: {
-                pageSize: document.documentElement.outerHTML.length,
-                loadTime: performance.timing ? (performance.timing.loadEventEnd - performance.timing.navigationStart) : 1500
-              }
-            };
+            console.log('[Content] Analyzing page content...');
+            const analysis = await analyzer.analyzePageContent();
+            
+            console.log('[Content] Analysis completed:', analysis);
             
             // Send analysis to background
-            const response = await chrome.runtime.sendMessage({
+            await chrome.runtime.sendMessage({
               type: 'ANALYSIS_COMPLETE',
               data: analysis
             });
             
+            console.log('[Content] Analysis sent to background');
+            
           } catch (error) {
-            // Silent fail for analysis errors
+            console.error('[Content] Analysis failed:', error);
           }
         }, 1000);
         
         sendResponse({ success: true, message: 'Analysis started' });
+        return true;
+      }
+      
+      if (message.type === 'HIGHLIGHT_ISSUES') {
+        console.log('[Content] Received highlight request for', message.issues?.length, 'issues');
+        
+        try {
+          if (!pageHighlighter) {
+            console.log('[Content] Creating new PageHighlighter');
+            pageHighlighter = new PageHighlighter();
+            pageHighlighter.injectStyles();
+          }
+          
+          console.log('[Content] Highlighting issues:', message.issues);
+          pageHighlighter.highlightIssues(message.issues);
+          
+          console.log('[Content] Issues highlighted successfully');
+          sendResponse({ success: true });
+        } catch (error) {
+          console.error('[Content] Failed to highlight issues:', error);
+          sendResponse({ success: true }); // 静默失败，不影响主功能
+        }
+        return true;
+      }
+      
+      if (message.type === 'CLEAR_HIGHLIGHTS') {
+        try {
+          if (pageHighlighter) {
+            pageHighlighter.clearHighlights();
+          }
+          sendResponse({ success: true });
+        } catch (error) {
+          sendResponse({ success: true });
+        }
+        return true;
+      }
+      
+      if (message.type === 'SCROLL_TO_ISSUE') {
+        try {
+          if (pageHighlighter) {
+            pageHighlighter.scrollToIssue(message.issueIndex);
+          }
+          sendResponse({ success: true });
+        } catch (error) {
+          sendResponse({ success: true });
+        }
         return true;
       }
       
@@ -98,3 +109,6 @@ if (typeof chrome !== 'undefined' && chrome.runtime) {
     // Silent fail for setup errors
   }
 }
+
+
+

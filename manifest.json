@@ -23,6 +23,8 @@
         "https://*/*"
       ],
       "js": [
+        "js/enhanced-content-analyzer.js",
+        "js/page-highlighter.js",
         "js/content.js"
       ],
       "run_at": "document_idle"
