@@ -1,5 +1,4 @@
-// Simple background service worker without modules
-console.log('SEO Checker Background: Service worker starting...');
+// SEO Checker Background Service Worker
 
 // Simple storage manager
 class SimpleStorageManager {
@@ -14,7 +13,7 @@ class SimpleStorageManager {
         'seo_reports': trimmedReports
       });
     } catch (error) {
-      console.error('Failed to save SEO report:', error);
+      // Silent fail for storage errors
     }
   }
 
@@ -23,7 +22,6 @@ class SimpleStorageManager {
       const result = await chrome.storage.local.get('seo_reports');
       return result['seo_reports'] || [];
     } catch (error) {
-      console.error('Failed to retrieve SEO reports:', error);
       return [];
     }
   }
@@ -33,7 +31,6 @@ class SimpleStorageManager {
       const reports = await this.getAllReports();
       return reports.find(report => report.url === url) || null;
     } catch (error) {
-      console.error('Failed to retrieve SEO report:', error);
       return null;
     }
   }
@@ -42,16 +39,13 @@ class SimpleStorageManager {
 // Simple background service
 class SimpleBackgroundService {
   constructor() {
-    console.log('SEO Checker Background: Initializing BackgroundService...');
     this.storageManager = new SimpleStorageManager();
     this.analysisStatus = new Map();
     this.initializeMessageHandlers();
-    console.log('SEO Checker Background: BackgroundService initialized successfully');
   }
 
   initializeMessageHandlers() {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      console.log('SEO Checker Background: Received message:', message);
       this.handleMessage(message, sender, sendResponse);
       return true; // Keep the message channel open for async responses
     });
@@ -67,7 +61,6 @@ class SimpleBackgroundService {
             break;
           
           case 'CONTENT_READY':
-            console.log('SEO Checker Background: Content script ready:', message.data);
             sendResponse({ success: true });
             break;
           
@@ -84,7 +77,6 @@ class SimpleBackgroundService {
       // Handle popup messages (using 'action' field)
       switch (message.action) {
         case 'ping':
-          console.log('SEO Checker Background: Responding to ping');
           sendResponse({ success: true, message: 'Background script is ready' });
           break;
           
@@ -108,14 +100,12 @@ class SimpleBackgroundService {
           sendResponse({ error: 'Unknown action' });
       }
     } catch (error) {
-      console.error('SEO Checker Background: Message handling error:', error);
       sendResponse({ error: error.message || 'Unknown error' });
     }
   }
 
   async handleGetPageAnalysis(message, sendResponse) {
     try {
-      console.log('SEO Checker Background: Handling getPageAnalysis request');
       const { tabId } = message;
       
       if (!tabId) {
@@ -128,11 +118,8 @@ class SimpleBackgroundService {
       }
 
       const report = await this.storageManager.getReportByUrl(tab.url);
-      console.log('SEO Checker Background: Found report:', !!report);
-      
       sendResponse({ report: report });
     } catch (error) {
-      console.error('SEO Checker Background: Get page analysis error:', error);
       sendResponse({ 
         error: error.message || '获取页面分析失败' 
       });
@@ -141,7 +128,6 @@ class SimpleBackgroundService {
 
   async handleAnalyzeCurrentPage(message, sendResponse) {
     try {
-      console.log('SEO Checker Background: Handling analyze current page request');
       const { tabId } = message;
       
       if (!tabId) {
@@ -151,35 +137,27 @@ class SimpleBackgroundService {
       // Check if tab exists and is valid
       try {
         const tab = await chrome.tabs.get(tabId);
-        console.log('SEO Checker Background: Tab info:', tab);
         
         if (!tab.url || (!tab.url.startsWith('http://') && !tab.url.startsWith('https://'))) {
           throw new Error('当前页面不是有效的网页，SEO分析仅支持HTTP/HTTPS页面');
         }
       } catch (tabError) {
-        console.error('SEO Checker Background: Tab error:', tabError);
         throw new Error('无法访问当前标签页');
       }
 
       // Set analysis status to running
       this.analysisStatus.set(tabId, { status: 'running', startTime: Date.now() });
-
-      console.log('SEO Checker Background: Sending START_ANALYSIS message to content script, tabId:', tabId);
       
       try {
         // Trigger content script analysis
         const contentResponse = await chrome.tabs.sendMessage(tabId, { type: 'START_ANALYSIS' });
-        console.log('SEO Checker Background: Content script response:', contentResponse);
       } catch (contentError) {
-        console.error('SEO Checker Background: Content script error:', contentError);
         this.analysisStatus.set(tabId, { status: 'failed', startTime: Date.now() });
         throw new Error('无法与页面内容脚本通信，请刷新页面后重试');
       }
       
-      console.log('SEO Checker Background: Analysis message sent successfully');
       sendResponse({ success: true, message: '分析已开始' });
     } catch (error) {
-      console.error('SEO Checker Background: Analyze current page error:', error);
       const { tabId } = message;
       if (tabId) {
         this.analysisStatus.set(tabId, { status: 'failed', startTime: Date.now() });
@@ -192,7 +170,6 @@ class SimpleBackgroundService {
 
   async handleGetAnalysisStatus(message, sendResponse) {
     try {
-      console.log('SEO Checker Background: Getting analysis status');
       const { tabId } = message;
       
       if (!tabId) {
@@ -206,22 +183,9 @@ class SimpleBackgroundService {
 
       // Check current analysis status
       const currentStatus = this.analysisStatus.get(tabId);
-      console.log('SEO Checker Background: Current analysis status for tab', tabId, ':', currentStatus);
 
       if (currentStatus) {
         if (currentStatus.status === 'running') {
-          // Check if analysis has been running too long (more than 2 minutes)
-          const runningTime = Date.now() - currentStatus.startTime;
-          if (runningTime > 2 * 60 * 1000) {
-            console.log('SEO Checker Background: Analysis timeout detected');
-            this.analysisStatus.set(tabId, { status: 'failed', startTime: Date.now() });
-            sendResponse({ 
-              completed: false,
-              error: '分析超时，请重试'
-            });
-            return;
-          }
-          
           sendResponse({ 
             completed: false,
             running: true,
@@ -235,6 +199,15 @@ class SimpleBackgroundService {
             error: '分析失败，请重试'
           });
           return;
+        } else if (currentStatus.status === 'completed') {
+          const report = await this.storageManager.getReportByUrl(tab.url);
+          if (report) {
+            sendResponse({ 
+              completed: true,
+              report: report 
+            });
+            return;
+          }
         }
       }
 
@@ -247,13 +220,11 @@ class SimpleBackgroundService {
         this.analysisStatus.set(tabId, { status: 'completed', startTime: Date.now() });
       }
       
-      console.log('SEO Checker Background: Analysis status response - completed:', !!report && isRecent);
       sendResponse({ 
         completed: !!report && isRecent,
         report: report 
       });
     } catch (error) {
-      console.error('SEO Checker Background: Get analysis status error:', error);
       sendResponse({ 
         error: error.message || '获取分析状态失败' 
       });
@@ -262,7 +233,6 @@ class SimpleBackgroundService {
 
   async handleAnalysisComplete(message, sender, sendResponse) {
     try {
-      console.log('SEO Checker Background: Handling analysis complete');
       const analysis = message.data;
       if (!analysis) {
         throw new Error('No analysis data provided');
@@ -273,18 +243,14 @@ class SimpleBackgroundService {
         this.analysisStatus.set(tabId, { status: 'completed', startTime: Date.now() });
       }
 
-      console.log('SEO Checker Background: Converting analysis to report');
       // Convert analysis to SEO report
       const report = this.convertAnalysisToReport(analysis, sender.tab);
       
-      console.log('SEO Checker Background: Saving report to storage');
       // Save report to storage
       await this.storageManager.saveReport(report);
       
-      console.log('SEO Checker Background: Analysis complete and saved:', report.url);
       sendResponse({ success: true });
     } catch (error) {
-      console.error('SEO Checker Background: Error handling analysis complete:', error);
       const tabId = sender.tab?.id;
       if (tabId) {
         this.analysisStatus.set(tabId, { status: 'failed', startTime: Date.now() });
@@ -295,8 +261,6 @@ class SimpleBackgroundService {
 
   async handleAnalysisProgress(message, sender, sendResponse) {
     try {
-      console.log('SEO Checker Background: Analysis progress:', message.data);
-      
       // Store progress information
       const tabId = sender.tab?.id;
       if (tabId) {
@@ -311,7 +275,6 @@ class SimpleBackgroundService {
       
       sendResponse({ success: true });
     } catch (error) {
-      console.error('SEO Checker Background: Error handling analysis progress:', error);
       sendResponse({ error: error.message || 'Unknown error' });
     }
   }
@@ -335,7 +298,6 @@ class SimpleBackgroundService {
 
       sendResponse({ success: true });
     } catch (error) {
-      console.error('SEO Checker Background: Open detailed report error:', error);
       sendResponse({ 
         error: error.message || '打开详细报告失败' 
       });
@@ -511,6 +473,4 @@ class SimpleBackgroundService {
 }
 
 // Initialize the background service
-console.log('SEO Checker Background: Creating service instance...');
 new SimpleBackgroundService();
-console.log('SEO Checker Background: Service worker ready');

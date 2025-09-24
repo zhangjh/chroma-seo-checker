@@ -163,10 +163,28 @@ body {
 
 .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #007bff, #28a745);
+    background: linear-gradient(90deg, #007bff, #17a2b8, #28a745);
     border-radius: 3px;
-    transition: width 0.3s ease;
+    transition: width 0.4s ease;
     width: 0%;
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: loading-shimmer 1.5s infinite;
+}
+
+@keyframes loading-shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
 }
 
 .progress-text {
@@ -243,14 +261,29 @@ body {
     font-weight: 700;
     color: #28a745;
     line-height: 1;
+    transition: all 0.3s ease;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
 .score-value.warning {
-    color: #ffc107;
+    color: #fd7e14;
+    text-shadow: 0 1px 2px rgba(253,126,20,0.2);
 }
 
 .score-value.danger {
     color: #dc3545;
+    text-shadow: 0 1px 2px rgba(220,53,69,0.2);
+}
+
+/* 总分颜色类 */
+.score-value.excellent {
+    color: #28a745 !important;
+    text-shadow: 0 1px 2px rgba(40,167,69,0.2);
+}
+
+.score-value.good {
+    color: #007bff !important;
+    text-shadow: 0 1px 2px rgba(0,123,255,0.2);
 }
 
 .score-label {
@@ -271,6 +304,14 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
+    padding: 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.score-item:hover {
+    background: rgba(0,123,255,0.05);
+    transform: translateX(2px);
 }
 
 .score-category {
@@ -292,19 +333,63 @@ body {
 .score-fill {
     height: 100%;
     border-radius: 3px;
-    transition: width 0.3s ease;
+    transition: all 0.4s ease;
+    position: relative;
+    overflow: hidden;
+    background-color: #e9ecef; /* 默认灰色背景 */
+    min-width: 2px; /* 确保有最小宽度显示颜色 */
+    display: block;
 }
 
-.score-fill.technical {
-    background: #17a2b8;
+/* 进度条颜色类 - 使用!important确保优先级 */
+
+/* 优秀 (80-100分) - 绿色 */
+.score-fill.excellent {
+    background-color: #28a745 !important;
+    background: #28a745 !important;
 }
 
-.score-fill.content {
-    background: #28a745;
+/* 良好 (60-79分) - 蓝色 */
+.score-fill.good {
+    background-color: #007bff !important;
+    background: #007bff !important;
 }
 
-.score-fill.performance {
-    background: #ffc107;
+/* 一般 (40-59分) - 橙色 */
+.score-fill.average {
+    background-color: #fd7e14 !important;
+    background: #fd7e14 !important;
+}
+
+/* 差 (0-39分) - 红色 */
+.score-fill.poor {
+    background-color: #dc3545 !important;
+    background: #dc3545 !important;
+}
+
+/* 调试样式 - 确保颜色类能被应用 */
+.score-fill[class*="excellent"],
+.score-fill[class*="good"],
+.score-fill[class*="average"],
+.score-fill[class*="poor"] {
+    border: 1px solid rgba(0,0,0,0.1) !important;
+}
+
+/* 闪光效果 */
+.score-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
 }
 
 .score-number {
@@ -313,6 +398,27 @@ body {
     color: #495057;
     width: 24px;
     text-align: right;
+}
+
+/* 分数数字颜色类 */
+.score-number.excellent {
+    color: #28a745 !important;
+    font-weight: 700 !important;
+}
+
+.score-number.good {
+    color: #007bff !important;
+    font-weight: 600 !important;
+}
+
+.score-number.average {
+    color: #fd7e14 !important;
+    font-weight: 600 !important;
+}
+
+.score-number.poor {
+    color: #dc3545 !important;
+    font-weight: 700 !important;
 }
 
 /* Summary Section */

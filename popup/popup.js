@@ -1,5 +1,4 @@
-// Simple popup script without modules
-console.log('SEO Checker: Popup script loaded');
+// SEO Checker Popup Script
 
 // Simple UI controller
 class SimplePopupUI {
@@ -34,7 +33,6 @@ class SimplePopupUI {
       criticalIssues: document.getElementById('critical-issues'),
       highIssues: document.getElementById('high-issues'),
       totalIssues: document.getElementById('total-issues'),
-      lastCheckedTime: document.getElementById('last-checked-time'),
       
       issuesList: document.getElementById('issues-list'),
       noIssues: document.getElementById('no-issues'),
@@ -52,7 +50,7 @@ class SimplePopupUI {
       generateSuggestionsBtn: document.getElementById('generate-suggestions'),
       detailedReportBtn: document.getElementById('detailed-report-btn'),
       exportBtn: document.getElementById('export-btn'),
-      testBtn: document.getElementById('test-btn')
+
     };
   }
 
@@ -100,38 +98,25 @@ class SimplePopupUI {
       });
     }
 
-    // Test button for debugging
-    if (this.elements.testBtn) {
-      this.elements.testBtn.addEventListener('click', () => {
-        console.log('SEO Checker: Test button clicked');
-        this.createMockAnalysisResult();
-      });
-    }
+
   }
 
   initializeUI() {
-    console.log('SEO Checker: Initializing UI');
     this.showLoading();
     this.loadCurrentPageAnalysis();
   }
 
   async loadCurrentPageAnalysis() {
     try {
-      console.log('SEO Checker: Loading current page analysis');
-      
-      // First test if background script is responsive
-      console.log('SEO Checker: Testing background script connection...');
+      // Test if background script is responsive
       try {
         const pingResponse = await chrome.runtime.sendMessage({ action: 'ping' });
-        console.log('SEO Checker: Background ping response:', pingResponse);
       } catch (pingError) {
-        console.error('SEO Checker: Background script not responsive:', pingError);
         throw new Error('后台脚本无响应，请重新加载扩展');
       }
       
       // Get current tab
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      console.log('SEO Checker: Current tab:', tab);
 
       if (!tab.id) {
         throw new Error('无法获取当前标签页');
@@ -143,21 +128,17 @@ class SimplePopupUI {
       }
 
       // Request analysis from background script
-      console.log('SEO Checker: Requesting analysis from background script');
       let response;
       try {
         response = await chrome.runtime.sendMessage({
           action: 'getPageAnalysis',
           tabId: tab.id
         });
-        console.log('SEO Checker: Background response:', response);
       } catch (messageError) {
-        console.error('SEO Checker: Failed to send message to background:', messageError);
         throw new Error('无法与后台脚本通信，请重新加载扩展');
       }
 
       if (!response) {
-        console.error('SEO Checker: No response from background script');
         throw new Error('后台脚本无响应，请重新加载扩展');
       }
 
@@ -166,14 +147,12 @@ class SimplePopupUI {
       }
 
       if (response.report) {
-        console.log('SEO Checker: Found cached report, displaying results');
         this.displaySEOScore(response.report.score);
         this.showQuickReport({
           score: response.report.score,
           criticalIssues: response.report.issues.filter(i => i.severity === 'critical').length,
           highPriorityIssues: response.report.issues.filter(i => i.severity === 'high').length,
-          totalIssues: response.report.issues.length,
-          lastChecked: new Date(response.report.timestamp)
+          totalIssues: response.report.issues.length
         });
         this.displayIssues(response.report.issues);
 
@@ -181,30 +160,23 @@ class SimplePopupUI {
           this.displaySuggestions(response.report.suggestions);
         }
       } else {
-        console.log('SEO Checker: No cached analysis found, triggering new analysis');
         // No cached analysis, trigger new analysis
         this.triggerNewAnalysis(tab.id);
       }
     } catch (error) {
-      console.error('SEO Checker: Failed to load analysis:', error);
       this.showError(error instanceof Error ? error.message : '加载分析结果失败');
     }
   }
 
   async triggerNewAnalysis(tabId) {
     try {
-      console.log('SEO Checker: Triggering new analysis for tab:', tabId);
-      
       // 显示初始进度
       this.updateProgress({ step: 1, message: '正在启动SEO分析...', progress: 5 });
       
-      // 首先测试content脚本是否可用
-      console.log('SEO Checker: Testing content script connection...');
+      // 测试content脚本是否可用
       try {
         await chrome.tabs.sendMessage(tabId, { type: 'PING' });
-        console.log('SEO Checker: Content script is responsive');
       } catch (contentError) {
-        console.error('SEO Checker: Content script not responsive:', contentError);
         throw new Error('页面内容脚本未加载，请刷新页面后重试');
       }
       
@@ -212,24 +184,19 @@ class SimplePopupUI {
         action: 'analyzeCurrentPage',
         tabId: tabId
       });
-      console.log('SEO Checker: Analysis trigger response:', response);
 
       if (response.error) {
         throw new Error(response.error);
       }
 
       // Analysis started, wait for completion
-      console.log('SEO Checker: Analysis started, waiting for completion');
       this.waitForAnalysisCompletion(tabId);
     } catch (error) {
-      console.error('SEO Checker: Failed to trigger analysis:', error);
       this.showError(error instanceof Error ? error.message : '启动分析失败');
     }
   }
 
   waitForAnalysisCompletion(tabId) {
-    let checkCount = 0;
-    const maxChecks = 30; // 30 seconds max
     const steps = [
       { step: 1, message: '正在连接到页面...', progress: 10 },
       { step: 2, message: '正在分析页面元数据...', progress: 25 },
@@ -240,6 +207,8 @@ class SimplePopupUI {
     ];
     
     let currentStepIndex = 0;
+    let checkCount = 0;
+    const maxChecks = 15; // 最多检查15次 (30秒)
     
     // 开始显示进度
     this.updateProgress(steps[0]);
@@ -247,25 +216,13 @@ class SimplePopupUI {
     const checkInterval = setInterval(async () => {
       try {
         checkCount++;
-        console.log(`SEO Checker: Checking analysis status (${checkCount}/${maxChecks})`);
-        
-        // 更新进度显示（模拟进度）
-        if (checkCount <= steps.length && currentStepIndex < steps.length - 1) {
-          if (checkCount % 3 === 0) { // 每3秒更新一次步骤
-            currentStepIndex++;
-            this.updateProgress(steps[currentStepIndex]);
-          }
-        }
         
         const response = await chrome.runtime.sendMessage({
           action: 'getAnalysisStatus',
           tabId: tabId
         });
-        
-        console.log('SEO Checker: Analysis status response:', response);
 
         if (response.completed && response.report) {
-          console.log('SEO Checker: Analysis completed successfully');
           clearInterval(checkInterval);
           
           // 显示完成状态
@@ -278,46 +235,60 @@ class SimplePopupUI {
               score: response.report.score,
               criticalIssues: response.report.issues.filter(i => i.severity === 'critical').length,
               highPriorityIssues: response.report.issues.filter(i => i.severity === 'high').length,
-              totalIssues: response.report.issues.length,
-              lastChecked: new Date(response.report.timestamp)
+              totalIssues: response.report.issues.length
             });
             this.displayIssues(response.report.issues);
           }, 500);
         } else if (response.error) {
-          console.error('SEO Checker: Analysis failed with error:', response.error);
           clearInterval(checkInterval);
           this.showError(response.error);
         } else if (checkCount >= maxChecks) {
-          console.error('SEO Checker: Analysis timed out after', maxChecks, 'checks');
+          // 检查次数达到上限，尝试获取缓存的报告
           clearInterval(checkInterval);
-          this.showError('分析超时，请重试');
-        } else {
-          console.log('SEO Checker: Analysis still in progress...');
           
-          // 如果分析正在运行，显示相应的消息
+          try {
+            const cachedResponse = await chrome.runtime.sendMessage({
+              action: 'getPageAnalysis',
+              tabId: tabId
+            });
+            
+            if (cachedResponse.report) {
+              this.updateProgress({ step: 6, message: '分析完成！', progress: 100 });
+              setTimeout(() => {
+                this.displaySEOScore(cachedResponse.report.score);
+                this.showQuickReport({
+                  score: cachedResponse.report.score,
+                  criticalIssues: cachedResponse.report.issues.filter(i => i.severity === 'critical').length,
+                  highPriorityIssues: cachedResponse.report.issues.filter(i => i.severity === 'high').length,
+                  totalIssues: cachedResponse.report.issues.length
+                });
+                this.displayIssues(cachedResponse.report.issues);
+              }, 500);
+            } else {
+              this.showError('分析时间较长，请稍后刷新查看结果');
+            }
+          } catch (error) {
+            this.showError('分析时间较长，请稍后刷新查看结果');
+          }
+        } else {
+          // 更新进度显示
           if (response.running) {
-            // 如果有真实的进度信息，使用它
             if (response.progress) {
               this.updateProgress(response.progress);
-              currentStepIndex = response.progress.step - 1; // 同步步骤索引
+              currentStepIndex = response.progress.step - 1;
             } else if (currentStepIndex < steps.length - 1) {
-              // 继续显示当前步骤
-            } else {
-              // 如果已经到最后一步，显示等待完成
-              this.updateProgress({ 
-                step: 6, 
-                message: '正在完成分析，请稍候...', 
-                progress: 90 + (checkCount % 10) 
-              });
+              if (checkCount % 2 === 0) {
+                currentStepIndex++;
+                this.updateProgress(steps[currentStepIndex]);
+              }
             }
           }
         }
       } catch (error) {
-        console.error('SEO Checker: Error checking analysis status:', error);
         clearInterval(checkInterval);
         this.showError('检查分析状态失败: ' + error.message);
       }
-    }, 1000);
+    }, 2000);
   }
 
   updateProgress(stepInfo) {
@@ -337,7 +308,6 @@ class SimplePopupUI {
       this.elements.stepCounter.textContent = `第 ${stepInfo.step} 步，共 6 步`;
     }
     
-    console.log(`SEO Checker: Progress updated - Step ${stepInfo.step}: ${stepInfo.message} (${stepInfo.progress}%)`);
   }
 
   displaySEOScore(score) {
@@ -347,26 +317,35 @@ class SimplePopupUI {
       this.updateScoreColor(this.elements.overallScore, score.overall);
     }
 
-    // Update breakdown scores
+    // Update breakdown scores with colors
     if (this.elements.technicalScore) {
       this.elements.technicalScore.textContent = score.technical.toString();
+      this.updateScoreNumberColor(this.elements.technicalScore, score.technical);
     }
     if (this.elements.contentScore) {
       this.elements.contentScore.textContent = score.content.toString();
+      this.updateScoreNumberColor(this.elements.contentScore, score.content);
     }
     if (this.elements.performanceScore) {
       this.elements.performanceScore.textContent = score.performance.toString();
+      this.updateScoreNumberColor(this.elements.performanceScore, score.performance);
     }
 
-    // Update progress bars
+    // Update progress bars with colors and width
     if (this.elements.technicalFill) {
-      this.elements.technicalFill.style.width = `${score.technical}%`;
+      const width = Math.max(score.technical, 5);
+      this.elements.technicalFill.style.width = `${width}%`;
+      this.updateProgressBarColor(this.elements.technicalFill, score.technical);
     }
     if (this.elements.contentFill) {
-      this.elements.contentFill.style.width = `${score.content}%`;
+      const width = Math.max(score.content, 5);
+      this.elements.contentFill.style.width = `${width}%`;
+      this.updateProgressBarColor(this.elements.contentFill, score.content);
     }
     if (this.elements.performanceFill) {
-      this.elements.performanceFill.style.width = `${score.performance}%`;
+      const width = Math.max(score.performance, 5);
+      this.elements.performanceFill.style.width = `${width}%`;
+      this.updateProgressBarColor(this.elements.performanceFill, score.performance);
     }
 
     this.showMainContent();
@@ -381,9 +360,6 @@ class SimplePopupUI {
     }
     if (this.elements.totalIssues) {
       this.elements.totalIssues.textContent = report.totalIssues.toString();
-    }
-    if (this.elements.lastCheckedTime) {
-      this.elements.lastCheckedTime.textContent = this.formatTime(report.lastChecked);
     }
   }
 
@@ -442,12 +418,10 @@ class SimplePopupUI {
   }
 
   displaySuggestions(suggestions) {
-    // Simple suggestions display
-    console.log('SEO Checker: Displaying suggestions:', suggestions);
+    // TODO: Implement suggestions display
   }
 
   async generateAISuggestions() {
-    console.log('SEO Checker: Generating AI suggestions');
     // TODO: Implement AI suggestions
   }
 
@@ -456,51 +430,13 @@ class SimplePopupUI {
     this.loadCurrentPageAnalysis();
   }
 
-  // 测试方法：创建模拟的分析结果
-  createMockAnalysisResult() {
-    console.log('SEO Checker: Creating mock analysis result for testing');
-    
-    const mockReport = {
-      score: {
-        overall: 75,
-        technical: 80,
-        content: 70,
-        performance: 75
-      },
-      issues: [
-        {
-          title: '缺少Meta描述',
-          description: '页面没有Meta描述标签，这会影响搜索引擎结果页面的显示',
-          severity: 'high',
-          recommendation: '添加一个150-160字符的Meta描述'
-        },
-        {
-          title: '图片缺少Alt属性',
-          description: '发现3张图片没有Alt属性',
-          severity: 'medium',
-          recommendation: '为所有图片添加描述性的Alt属性'
-        }
-      ],
-      timestamp: new Date()
-    };
 
-    this.displaySEOScore(mockReport.score);
-    this.showQuickReport({
-      score: mockReport.score,
-      criticalIssues: mockReport.issues.filter(i => i.severity === 'critical').length,
-      highPriorityIssues: mockReport.issues.filter(i => i.severity === 'high').length,
-      totalIssues: mockReport.issues.length,
-      lastChecked: mockReport.timestamp
-    });
-    this.displayIssues(mockReport.issues);
-  }
 
   openDetailedReport() {
     chrome.runtime.sendMessage({ action: 'openDetailedReport' });
   }
 
   showExportOptions() {
-    console.log('SEO Checker: Show export options');
     // TODO: Implement export options
   }
 
@@ -516,7 +452,6 @@ class SimplePopupUI {
   }
 
   showIssueDetails(issue) {
-    console.log('SEO Checker: Issue details:', issue);
     alert(`${issue.title}\n\n${issue.description}\n\n推荐: ${issue.recommendation || '无'}`);
   }
 
@@ -563,11 +498,71 @@ class SimplePopupUI {
   }
 
   updateScoreColor(element, score) {
-    element.classList.remove('warning', 'danger');
-    if (score < 50) {
-      element.classList.add('danger');
-    } else if (score < 80) {
-      element.classList.add('warning');
+    // 移除所有颜色类
+    element.classList.remove('warning', 'danger', 'excellent', 'good', 'average', 'poor');
+    
+    // 根据分数添加对应的颜色类
+    if (score >= 80) {
+      element.classList.add('excellent');
+    } else if (score >= 60) {
+      element.classList.add('good');
+    } else if (score >= 40) {
+      element.classList.add('warning'); // 保持原有的warning类
+    } else {
+      element.classList.add('danger'); // 保持原有的danger类
+    }
+  }
+
+  updateProgressBarColor(element, score) {
+    // 移除所有颜色类
+    element.classList.remove('excellent', 'good', 'average', 'poor');
+    
+    // 根据分数设置颜色类
+    let colorClass;
+    if (score >= 80) {
+      colorClass = 'excellent';
+    } else if (score >= 60) {
+      colorClass = 'good';
+    } else if (score >= 40) {
+      colorClass = 'average';
+    } else {
+      colorClass = 'poor';
+    }
+    
+    element.classList.add(colorClass);
+    
+    // 设置内联样式作为备用
+    const colors = {
+      excellent: '#28a745',
+      good: '#007bff', 
+      average: '#fd7e14',
+      poor: '#dc3545'
+    };
+    
+    element.style.setProperty('background-color', colors[colorClass], 'important');
+  }
+
+  updateScoreNumberColor(element, score) {
+    // 移除所有颜色类
+    element.classList.remove('excellent', 'good', 'average', 'poor');
+    
+    // 根据分数添加对应的颜色类和样式
+    if (score >= 80) {
+      element.classList.add('excellent');
+      element.style.setProperty('color', '#28a745', 'important');
+      element.style.setProperty('font-weight', '700', 'important');
+    } else if (score >= 60) {
+      element.classList.add('good');
+      element.style.setProperty('color', '#007bff', 'important');
+      element.style.setProperty('font-weight', '600', 'important');
+    } else if (score >= 40) {
+      element.classList.add('average');
+      element.style.setProperty('color', '#fd7e14', 'important');
+      element.style.setProperty('font-weight', '600', 'important');
+    } else {
+      element.classList.add('poor');
+      element.style.setProperty('color', '#dc3545', 'important');
+      element.style.setProperty('font-weight', '700', 'important');
     }
   }
 
@@ -581,29 +576,11 @@ class SimplePopupUI {
     return severityMap[severity] || severity;
   }
 
-  formatTime(date) {
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    
-    if (minutes < 1) {
-      return '刚刚';
-    } else if (minutes < 60) {
-      return `${minutes}分钟前`;
-    } else {
-      const hours = Math.floor(minutes / 60);
-      if (hours < 24) {
-        return `${hours}小时前`;
-      } else {
-        return date.toLocaleDateString();
-      }
-    }
-  }
+
 }
 
 // Initialize popup when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('SEO Checker: DOM loaded, initializing popup');
   const popup = new SimplePopupUI();
   popup.initializeUI();
 });
