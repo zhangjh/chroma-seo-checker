@@ -1,0 +1,637 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background: #f8f9fa;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.btn {
+    border: none;
+    border-radius: 6px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+}
+
+/* Loading and Error States */
+.loading,
+.error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e9ecef;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+@ keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.error-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.error-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+/* Report Container */
+.report-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+}
+
+/* Header */
+.report-header {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    padding: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-content h1 {
+    font-size: 2.2em;
+    margin-bottom: 8px;
+    font-weight: 300;
+}
+
+.report-meta {
+    opacity: 0.9;
+}
+
+.report-url {
+    font-size: 1.1em;
+    margin-bottom: 5px;
+    word-break: break-all;
+}
+
+.report-timestamp {
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+.header-actions {
+    display: flex;
+    gap: 12px;
+}
+
+/* Score Overview */
+.score-overview {
+    padding: 20px;
+    background: white;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.overall-score {
+    text-align: center;
+}
+
+.score-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: conic-gradient(#28a745 0deg var(--score-deg, 0deg), #e9ecef var(--score-deg, 0deg) 360deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin-bottom: 8px;
+}
+
+.score-circle::before {
+    content: '';
+    width: 90px;
+    height: 90px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+}
+
+.score-value {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #333;
+    z-index: 1;
+}
+
+.score-label {
+    font-size: 1.1em;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.score-breakdown {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.score-category {
+    text-align: center;
+}
+
+.score-category h3 {
+    font-size: 1em;
+    color: #666;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.score-bar {
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.score-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+
+.score-fill.technical {
+    background: #007bff;
+}
+
+.score-fill.content {
+    background: #28a745;
+}
+
+.score-fill.performance {
+    background: #fd7e14;
+}
+
+.score-number {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #333;
+}
+
+/* Issues Section */
+.issues-section {
+    padding: 20px;
+    background: white;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.issues-section h2 {
+    font-size: 1.6em;
+    margin-bottom: 20px;
+    color: #333;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 8px;
+}
+
+.issues-summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.summary-item {
+    text-align: center;
+    padding: 20px;
+    border-radius: 8px;
+    border: 2px solid;
+}
+
+.summary-item.critical {
+    border-color: #dc3545;
+    background: #f8d7da;
+}
+
+.summary-item.high {
+    border-color: #fd7e14;
+    background: #ffeaa7;
+}
+
+.summary-item.medium {
+    border-color: #ffc107;
+    background: #fff3cd;
+}
+
+.summary-item.low {
+    border-color: #28a745;
+    background: #d4edda;
+}
+
+.summary-item .count {
+    display: block;
+    font-size: 2em;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.summary-item.critical .count {
+    color: #721c24;
+}
+
+.summary-item.high .count {
+    color: #856404;
+}
+
+.summary-item.medium .count {
+    color: #856404;
+}
+
+.summary-item.low .count {
+    color: #155724;
+}
+
+.summary-item .label {
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+.issues-list {
+    display: grid;
+    gap: 15px;
+}
+
+.issue-card {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    border-left: 4px solid;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.issue-card.critical {
+    border-left-color: #dc3545;
+}
+
+.issue-card.high {
+    border-left-color: #fd7e14;
+}
+
+.issue-card.medium {
+    border-left-color: #ffc107;
+}
+
+.issue-card.low {
+    border-left-color: #28a745;
+}
+
+.issue-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.issue-title {
+    font-size: 1.2em;
+    font-weight: 600;
+    color: #333;
+}
+
+.issue-severity {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8em;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.issue-severity.critical {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.issue-severity.high {
+    background: #ffeaa7;
+    color: #856404;
+}
+
+.issue-severity.medium {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.issue-severity.low {
+    background: #d4edda;
+    color: #155724;
+}
+
+.issue-description {
+    color: #666;
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+.issue-details {
+    display: grid;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.issue-detail-item {
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 3px solid #007bff;
+}
+
+.issue-detail-item strong {
+    color: #007bff;
+}
+
+.issue-recommendation {
+    background: #e3f2fd;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #2196f3;
+}
+
+.issue-recommendation h4 {
+    color: #1565c0;
+    margin-bottom: 10px;
+}
+
+.issue-recommendation p {
+    color: #1976d2;
+    line-height: 1.6;
+}
+
+/* Technical Section */
+.technical-section {
+    padding: 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.technical-section h2 {
+    font-size: 1.5em;
+    margin-bottom: 15px;
+    color: #333;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 6px;
+}
+
+.technical-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    align-items: start;
+}
+
+.tech-card {
+    background: white;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    height: fit-content;
+    min-height: auto;
+}
+
+.tech-card h3 {
+    color: #007bff;
+    margin-bottom: 8px;
+    font-size: 1em;
+}
+
+.tech-content {
+    display: grid;
+    gap: 4px;
+}
+
+.tech-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.tech-item:last-child {
+    border-bottom: none;
+}
+
+.tech-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.tech-value {
+    font-weight: 600;
+}
+
+.tech-value.good {
+    color: #28a745;
+}
+
+.tech-value.warning {
+    color: #fd7e14;
+}
+
+.tech-value.error {
+    color: #dc3545;
+}
+
+/* Content Section */
+.content-section {
+    padding: 20px;
+    background: white;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.content-section h2 {
+    font-size: 1.5em;
+    margin-bottom: 15px;
+    color: #333;
+    border-bottom: 2px solid #28a745;
+    padding-bottom: 6px;
+}
+
+.content-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    align-items: start;
+}
+
+.content-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 12px;
+    border: 1px solid #e9ecef;
+    height: fit-content;
+    min-height: auto;
+}
+
+.content-card h3 {
+    color: #28a745;
+    margin-bottom: 8px;
+    font-size: 1em;
+}
+
+.content-details {
+    display: grid;
+    gap: 4px;
+}
+
+/* Performance Section */
+.performance-section {
+    padding: 20px;
+    background: #f8f9fa;
+}
+
+.performance-section h2 {
+    font-size: 1.6em;
+    margin-bottom: 20px;
+    color: #333;
+    border-bottom: 2px solid #fd7e14;
+    padding-bottom: 8px;
+}
+
+.performance-grid {
+    display: grid;
+    gap: 20px;
+}
+
+.perf-card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.perf-card h3 {
+    color: #fd7e14;
+    margin-bottom: 20px;
+    font-size: 1.2em;
+}
+
+.perf-details {
+    display: grid;
+    gap: 12px;
+}
+
+/* Print Styles */
+@media print {
+    body {
+        background: white;
+    }
+
+    .report-header {
+        background: #333 !important;
+        -webkit-print-color-adjust: exact;
+    }
+
+    .btn {
+        display: none;
+    }
+
+    .score-overview,
+    .issues-section,
+    .technical-section,
+    .content-section,
+    .performance-section {
+        page-break-inside: avoid;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .score-overview {
+        flex-direction: column;
+        gap: 30px;
+    }
+
+    .score-breakdown {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .issues-summary {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .technical-grid,
+    .content-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .report-header {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+}

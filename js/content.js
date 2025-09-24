@@ -13,28 +13,18 @@ if (typeof chrome !== 'undefined' && chrome.runtime) {
       }
       
       if (message.type === 'START_ANALYSIS') {
-        console.log('[Content] Starting SEO analysis...');
-        
         // Perform analysis and send result
         setTimeout(async () => {
           try {
-            console.log('[Content] Creating analyzer...');
-            
             // Use enhanced analyzer
             const analyzer = new EnhancedContentAnalyzer();
-            
-            console.log('[Content] Analyzing page content...');
             const analysis = await analyzer.analyzePageContent();
-            
-            console.log('[Content] Analysis completed:', analysis);
             
             // Send analysis to background
             await chrome.runtime.sendMessage({
               type: 'ANALYSIS_COMPLETE',
               data: analysis
             });
-            
-            console.log('[Content] Analysis sent to background');
             
           } catch (error) {
             console.error('[Content] Analysis failed:', error);
@@ -46,19 +36,13 @@ if (typeof chrome !== 'undefined' && chrome.runtime) {
       }
       
       if (message.type === 'HIGHLIGHT_ISSUES') {
-        console.log('[Content] Received highlight request for', message.issues?.length, 'issues');
-        
         try {
           if (!pageHighlighter) {
-            console.log('[Content] Creating new PageHighlighter');
             pageHighlighter = new PageHighlighter();
             pageHighlighter.injectStyles();
           }
           
-          console.log('[Content] Highlighting issues:', message.issues);
           pageHighlighter.highlightIssues(message.issues);
-          
-          console.log('[Content] Issues highlighted successfully');
           sendResponse({ success: true });
         } catch (error) {
           console.error('[Content] Failed to highlight issues:', error);

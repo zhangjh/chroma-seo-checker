@@ -217,8 +217,8 @@ class EnhancedContentAnalyzer {
       const navigationEntries = window.performance.getEntriesByType('navigation');
       if (navigationEntries.length > 0) {
         const nav = navigationEntries[0];
-        performance.loadTime = nav.loadEventEnd - nav.fetchStart;
-        performance.domContentLoaded = nav.domContentLoadedEventEnd - nav.fetchStart;
+        performance.loadTime = (nav.loadEventEnd - nav.fetchStart) / 1000; // 转换为秒
+        performance.domContentLoaded = (nav.domContentLoadedEventEnd - nav.fetchStart) / 1000; // 转换为秒
       }
     }
 

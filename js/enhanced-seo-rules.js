@@ -178,7 +178,7 @@ class EnhancedSEORules {
           id: 'load_time',
           name: '页面加载时间过长',
           weight: 30,
-          check: (analysis) => (analysis.performance?.loadTime || 0) < 3000,
+          check: (analysis) => (analysis.performance?.loadTime || 0) < 3, // 3秒
           severity: 'high'
         },
         {
@@ -302,7 +302,7 @@ class EnhancedSEORules {
       'internal_links': `页面仅有${analysis.content?.internalLinks || 0}个内链`,
       'heading_structure': '标题层次结构不合理',
       'page_size': `页面大小为${Math.round((analysis.performance?.pageSize || 0) / 1024)}KB`,
-      'load_time': `页面加载时间${Math.round((analysis.performance?.loadTime || 0) / 1000)}秒`,
+      'load_time': `页面加载时间${Math.round(analysis.performance?.loadTime || 0)}秒`,
       'https_usage': '网站未使用HTTPS协议',
       'image_optimization': '图片优化不足',
       'open_graph': '页面缺少Open Graph标签',
@@ -371,7 +371,7 @@ class EnhancedSEORules {
       'internal_links': `${analysis.content?.internalLinks || 0}个内链`,
       'heading_structure': this.getHeadingStructureInfo(analysis.headings),
       'page_size': `${Math.round((analysis.performance?.pageSize || 0) / 1024)}KB`,
-      'load_time': `${Math.round((analysis.performance?.loadTime || 0) / 1000)}秒`,
+      'load_time': `${Math.round(analysis.performance?.loadTime || 0)}秒`,
       'https_usage': 'HTTP协议',
       'image_optimization': `${analysis.images?.totalImages || 0}张图片需优化`,
       'open_graph': '无OG标签',

@@ -49,7 +49,6 @@ class SimplePopupUI {
       retryBtn: document.getElementById('retry-btn'),
       generateSuggestionsBtn: document.getElementById('generate-suggestions'),
       detailedReportBtn: document.getElementById('detailed-report-btn'),
-      exportBtn: document.getElementById('export-btn'),
 
     };
   }
@@ -92,13 +91,6 @@ class SimplePopupUI {
       });
     }
 
-    if (this.elements.exportBtn) {
-      this.elements.exportBtn.addEventListener('click', () => {
-        this.showExportOptions();
-      });
-    }
-
-
   }
 
   initializeUI() {
@@ -110,7 +102,7 @@ class SimplePopupUI {
     try {
       // Test if background script is responsive
       try {
-        const pingResponse = await chrome.runtime.sendMessage({ action: 'ping' });
+        await chrome.runtime.sendMessage({ action: 'ping' });
       } catch (pingError) {
         throw new Error('后台脚本无响应，请重新加载扩展');
       }
@@ -452,10 +444,7 @@ class SimplePopupUI {
           ${expectedValueInfo}
           ${impactInfo}
           <div class="issue-recommendation">
-            <div class="recommendation-header">
-              <strong>解决方案:</strong>
-              <button class="copy-code-btn" title="复制代码">📋</button>
-            </div>
+            <strong>解决方案:</strong>
             <div class="recommendation-content">${issue.recommendation}</div>
           </div>
         </div>
@@ -479,25 +468,13 @@ class SimplePopupUI {
         }
       });
 
-      // 添加复制代码功能
-      const copyBtn = issueElement.querySelector('.copy-code-btn');
-      if (copyBtn) {
-        copyBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.copyRecommendationCode(issue.recommendation);
-          copyBtn.textContent = '✅';
-          setTimeout(() => {
-            copyBtn.textContent = '📋';
-          }, 2000);
-        });
-      }
+
 
       // 添加定位功能
       const locateBtn = issueElement.querySelector('.locate-btn');
       if (locateBtn) {
         locateBtn.addEventListener('click', async (e) => {
           e.stopPropagation();
-          const issueId = locateBtn.getAttribute('data-issue-id');
           const originalIdx = parseInt(locateBtn.getAttribute('data-original-index'));
 
           try {
@@ -518,7 +495,8 @@ class SimplePopupUI {
   }
 
   displaySuggestions(suggestions) {
-    // TODO: Implement suggestions display
+    // Suggestions display implementation would go here
+    // TODO: Implement suggestions display when needed
   }
 
   async generateAISuggestions() {
@@ -532,12 +510,18 @@ class SimplePopupUI {
 
 
 
-  openDetailedReport() {
-    chrome.runtime.sendMessage({ action: 'openDetailedReport' });
-  }
-
-  showExportOptions() {
-    // TODO: Implement export options
+  async openDetailedReport() {
+    try {
+      // Get current tab URL
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      
+      chrome.runtime.sendMessage({ 
+        action: 'openDetailedReport',
+        url: tab.url 
+      });
+    } catch (error) {
+      console.error('Failed to open detailed report:', error);
+    }
   }
 
   setActiveFilter(filter) {
@@ -674,27 +658,7 @@ class SimplePopupUI {
     return severityMap[severity] || severity;
   }
 
-  copyRecommendationCode(recommendation) {
-    // 提取代码部分（在<>标签之间的内容）
-    const codeMatches = recommendation.match(/<[^>]+>/g);
-    let textToCopy = recommendation;
 
-    if (codeMatches && codeMatches.length > 0) {
-      // 如果有HTML代码，只复制代码部分
-      textToCopy = codeMatches.join('\n');
-    }
-
-    // 复制到剪贴板
-    navigator.clipboard.writeText(textToCopy).catch(() => {
-      // 降级方案
-      const textArea = document.createElement('textarea');
-      textArea.value = textToCopy;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-    });
-  }
 
   async locateIssueOnPage(issueIndex) {
     try {

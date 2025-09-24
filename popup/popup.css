@@ -6,7 +6,7 @@
 }
 
 body {
-    width: 420px;
+    width: 520px;
     min-height: 500px;
     margin: 0;
     padding: 0;
@@ -732,28 +732,7 @@ body {
     border-radius: 2px;
 }
 
-.recommendation-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-}
 
-.copy-code-btn {
-    background: #ffffff;
-    border: 1px solid #2196f3;
-    border-radius: 4px;
-    padding: 4px 8px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    color: #2196f3;
-}
-
-.copy-code-btn:hover {
-    background: #2196f3;
-    color: white;
-}
 
 .recommendation-content {
     font-size: 12px;
@@ -1040,9 +1019,9 @@ body {
 }
 
 /* Responsive adjustments */
-@media (max-width: 440px) {
+@media (max-width: 540px) {
     body {
-        width: 380px;
+        width: 480px;
     }
     
     .header {
@@ -1068,9 +1047,9 @@ body {
     }
 }
 
-@media (max-width: 400px) {
+@media (max-width: 500px) {
     body {
-        width: 320px;
+        width: 420px;
     }
 }/* Export 
 Modal Styles */

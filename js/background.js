@@ -99,6 +99,10 @@ class SimpleBackgroundService {
           await this.handleOpenDetailedReport(message, sendResponse);
           break;
         
+        case 'getLatestReport':
+          await this.handleGetLatestReport(message, sendResponse);
+          break;
+        
         default:
           sendResponse({ error: 'Unknown action' });
       }
@@ -284,15 +288,21 @@ class SimpleBackgroundService {
 
   async handleOpenDetailedReport(message, sendResponse) {
     try {
+      // Store the URL for the detailed report to access
+      if (message.url) {
+        await chrome.storage.local.set({ 'current_report_url': message.url });
+      }
+      
       // Create or focus detailed report tab
-      const url = chrome.runtime.getURL('dist/popup/detailed-report.html');
+      const url = chrome.runtime.getURL('popup/detailed-report.html');
       
       // Check if detailed report tab already exists
       const tabs = await chrome.tabs.query({ url: url });
       
       if (tabs.length > 0) {
-        // Focus existing tab
+        // Focus existing tab and reload it to get fresh data
         await chrome.tabs.update(tabs[0].id, { active: true });
+        await chrome.tabs.reload(tabs[0].id);
         await chrome.windows.update(tabs[0].windowId, { focused: true });
       } else {
         // Create new tab
@@ -307,18 +317,48 @@ class SimpleBackgroundService {
     }
   }
 
+  async handleGetLatestReport(message, sendResponse) {
+    try {
+      // First try to get the URL from storage (set when opening detailed report)
+      const result = await chrome.storage.local.get('current_report_url');
+      const targetUrl = result.current_report_url;
+      
+      if (targetUrl) {
+        // Get report for specific URL
+        const report = await this.storageManager.getReportByUrl(targetUrl);
+        if (report) {
+          sendResponse({ report: report });
+          return;
+        }
+      }
+      
+      // Fallback: Get all reports and return the most recent one
+      const reports = await this.storageManager.getAllReports();
+      
+      if (reports.length === 0) {
+        sendResponse({ 
+          report: null,
+          error: '没有找到任何分析报告，请先运行SEO分析' 
+        });
+        return;
+      }
+
+      // Return the most recent report (first in array)
+      const latestReport = reports[0];
+      sendResponse({ report: latestReport });
+    } catch (error) {
+      sendResponse({ 
+        error: error.message || '获取最新报告失败' 
+      });
+    }
+  }
+
   convertAnalysisToReport(analysis) {
-    console.log('[Background] Converting analysis to report...');
-    console.log('[Background] Analysis data:', analysis);
-    
     try {
       // Use enhanced scoring algorithm
       const enhancedRules = new EnhancedSEORules();
       const score = enhancedRules.calculateEnhancedScore(analysis);
       const issues = enhancedRules.generateDetailedIssues(analysis);
-      
-      console.log('[Background] Score calculated:', score);
-      console.log('[Background] Issues found:', issues.length);
     
     const report = {
       id: this.generateReportId(),
@@ -406,7 +446,6 @@ class SimpleBackgroundService {
       }
     };
 
-      console.log('[Background] Report generated successfully');
       return report;
     } catch (error) {
       console.error('[Background] Error converting analysis to report:', error);

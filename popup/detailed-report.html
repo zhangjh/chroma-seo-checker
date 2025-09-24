@@ -1,210 +1,15 @@
 <!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>SEO详细报告 - SEO Checker</title>
-    <link rel="stylesheet" href="popup.css">
-    <style>
-        body {
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            min-height: 100vh;
-            background: #f8f9fa;
-        }
-        
-        .detailed-report {
-            padding: 20px;
-        }
-        
-        .report-header {
-            background: white;
-            padding: 24px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .report-title {
-            font-size: 24px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 8px;
-        }
-        
-        .report-url {
-            color: #6c757d;
-            font-size: 14px;
-            word-break: break-all;
-        }
-        
-        .report-section {
-            background: white;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        
-        .section-title {
-            background: #f8f9fa;
-            padding: 16px 24px;
-            border-bottom: 1px solid #e9ecef;
-            font-size: 18px;
-            font-weight: 600;
-            color: #495057;
-        }
-        
-        .section-content {
-            padding: 24px;
-        }
-        
-        .ai-suggestions-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 20px;
-        }
-        
-        .suggestion-card {
-            border: 1px solid #e9ecef;
-            border-radius: 6px;
-            padding: 16px;
-            background: #f8f9fa;
-        }
-        
-        .suggestion-card.title-optimization {
-            border-left: 4px solid #28a745;
-        }
-        
-        .suggestion-card.meta-description {
-            border-left: 4px solid #17a2b8;
-        }
-        
-        .suggestion-card.content-improvement {
-            border-left: 4px solid #ffc107;
-        }
-        
-        .suggestion-card.keyword-suggestion {
-            border-left: 4px solid #6f42c1;
-        }
-        
-        .suggestion-card.structure-recommendation {
-            border-left: 4px solid #fd7e14;
-        }
-        
-        .suggestion-card-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #495057;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .suggestion-card-content {
-            font-size: 14px;
-            color: #6c757d;
-            line-height: 1.5;
-        }
-        
-        .back-button {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-        }
-        
-        .issues-severity-section {
-            margin-bottom: 24px;
-        }
-        
-        .severity-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 12px;
-            padding: 8px 12px;
-            border-radius: 4px;
-        }
-        
-        .severity-title.critical {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        .severity-title.high {
-            background: #ffeaa7;
-            color: #856404;
-        }
-        
-        .severity-title.medium {
-            background: #d1ecf1;
-            color: #0c5460;
-        }
-        
-        .severity-title.low {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .severity-issues {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        
-        .issue-item.detailed {
-            padding: 16px;
-            border: 1px solid #e9ecef;
-            border-radius: 6px;
-            background: white;
-        }
-        
-        .issue-recommendation {
-            margin-top: 8px;
-            padding: 8px;
-            background: #f8f9fa;
-            border-radius: 4px;
-            font-size: 13px;
-            color: #495057;
-        }
-        
-        .issue-ai-suggestion {
-            margin-top: 8px;
-            padding: 8px;
-            background: #e3f2fd;
-            border-radius: 4px;
-            font-size: 13px;
-            color: #1565c0;
-        }
-        
-        .report-meta {
-            margin-top: 8px;
-            font-size: 12px;
-            color: #6c757d;
-        }
+<html lang="zh-CN">
 
-        @media (max-width: 768px) {
-            .ai-suggestions-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .detailed-report {
-                padding: 16px;
-            }
-            
-            .report-header,
-            .section-content {
-                padding: 16px;
-            }
-        }
-    </style>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEO详细报告 - SEO Checker</title>
+    <link rel="stylesheet" href="detailed-report.css">
 </head>
+
 <body>
-    <button id="back-btn" class="btn btn-secondary back-button">返回</button>
-    
-    <div class="detailed-report">
+    <div class="report-container">
         <!-- Loading State -->
         <div id="loading" class="loading">
             <div class="spinner"></div>
@@ -216,84 +21,152 @@
             <div class="error-icon">⚠️</div>
             <h3>加载失败</h3>
             <p id="error-message">无法加载详细报告</p>
-            <button id="retry-btn" class="btn btn-primary">重试</button>
+            <div class="error-actions">
+                <button id="retry-btn" class="btn btn-primary">重试</button>
+                <button id="back-btn" class="btn btn-secondary">返回扩展</button>
+            </div>
         </div>
 
         <!-- Report Content -->
-        <div id="report-content" class="hidden">
-            <div class="report-header">
-                <h1 class="report-title" id="page-title">页面SEO详细报告</h1>
-                <div class="report-url" id="page-url"></div>
-                <div class="report-meta">
-                    <span>生成时间: </span>
-                    <span id="report-timestamp"></span>
+        <div id="report-content" class="report-content hidden">
+            <!-- Header -->
+            <header class="report-header">
+                <div class="header-content">
+                    <h1>SEO详细分析报告</h1>
+                    <div class="report-meta">
+                        <div class="report-url" id="report-url">-</div>
+                    </div>
                 </div>
-            </div>
+                <div class="header-actions">
+                    <button id="export-btn" class="btn btn-primary">导出PDF</button>
+                </div>
+            </header>
 
-            <!-- SEO Score Overview -->
-            <div class="report-section">
-                <div class="section-title">SEO评分概览</div>
-                <div class="section-content">
-                    <div class="score-breakdown">
-                        <div class="score-item">
-                            <span class="score-category">总体评分</span>
-                            <span class="score-bar">
-                                <span class="score-fill" id="overall-fill"></span>
-                            </span>
-                            <span class="score-number" id="overall-score">--</span>
+            <!-- Score Overview -->
+            <section class="score-overview">
+                <div class="overall-score">
+                    <div class="score-circle">
+                        <div class="score-value" id="overall-score">--</div>
+                        <div class="score-label">总分</div>
+                    </div>
+                </div>
+                <div class="score-breakdown">
+                    <div class="score-category">
+                        <h3>技术SEO</h3>
+                        <div class="score-bar">
+                            <div class="score-fill technical" id="technical-fill"></div>
                         </div>
-                        <div class="score-item">
-                            <span class="score-category">技术SEO</span>
-                            <span class="score-bar">
-                                <span class="score-fill technical" id="technical-fill"></span>
-                            </span>
-                            <span class="score-number" id="technical-score">--</span>
+                        <div class="score-number" id="technical-score">--</div>
+                    </div>
+                    <div class="score-category">
+                        <h3>内容质量</h3>
+                        <div class="score-bar">
+                            <div class="score-fill content" id="content-fill"></div>
                         </div>
-                        <div class="score-item">
-                            <span class="score-category">内容质量</span>
-                            <span class="score-bar">
-                                <span class="score-fill content" id="content-fill"></span>
-                            </span>
-                            <span class="score-number" id="content-score">--</span>
+                        <div class="score-number" id="content-score">--</div>
+                    </div>
+                    <div class="score-category">
+                        <h3>性能优化</h3>
+                        <div class="score-bar">
+                            <div class="score-fill performance" id="performance-fill"></div>
                         </div>
-                        <div class="score-item">
-                            <span class="score-category">性能优化</span>
-                            <span class="score-bar">
-                                <span class="score-fill performance" id="performance-fill"></span>
-                            </span>
-                            <span class="score-number" id="performance-score">--</span>
+                        <div class="score-number" id="performance-score">--</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Issues Section -->
+            <section class="issues-section">
+                <h2>发现的问题</h2>
+                <div class="issues-summary">
+                    <div class="summary-item critical">
+                        <span class="count" id="critical-count">0</span>
+                        <span class="label">严重问题</span>
+                    </div>
+                    <div class="summary-item high">
+                        <span class="count" id="high-count">0</span>
+                        <span class="label">高优先级</span>
+                    </div>
+                    <div class="summary-item medium">
+                        <span class="count" id="medium-count">0</span>
+                        <span class="label">中等问题</span>
+                    </div>
+                    <div class="summary-item low">
+                        <span class="count" id="low-count">0</span>
+                        <span class="label">低优先级</span>
+                    </div>
+                </div>
+                <div id="issues-list" class="issues-list">
+                    <!-- Issues will be populated here -->
+                </div>
+            </section>
+
+            <!-- Technical Details -->
+            <section class="technical-section">
+                <h2>技术分析详情</h2>
+                <div class="technical-grid">
+                    <div class="tech-card">
+                        <h3>元标签分析</h3>
+                        <div id="meta-analysis" class="tech-content">
+                            <!-- Meta tags analysis -->
+                        </div>
+                    </div>
+                    <div class="tech-card">
+                        <h3>标题结构</h3>
+                        <div id="heading-analysis" class="tech-content">
+                            <!-- Heading structure analysis -->
+                        </div>
+                    </div>
+                    <div class="tech-card">
+                        <h3>链接分析</h3>
+                        <div id="links-analysis" class="tech-content">
+                            <!-- Links analysis -->
+                        </div>
+                    </div>
+                    <div class="tech-card">
+                        <h3>图片优化</h3>
+                        <div id="images-analysis" class="tech-content">
+                            <!-- Images analysis -->
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <!-- AI优化建议 -->
-            <div class="report-section">
-                <div class="section-title">AI优化建议</div>
-                <div class="section-content">
-                    <div id="ai-suggestions-container">
-                        <div id="no-ai-suggestions" class="no-suggestions">
-                            <p>暂无AI建议，请在主界面生成建议</p>
+            <!-- Content Analysis -->
+            <section class="content-section">
+                <h2>内容分析</h2>
+                <div class="content-grid">
+                    <div class="content-card">
+                        <h3>内容统计</h3>
+                        <div id="content-stats" class="content-details">
+                            <!-- Content statistics -->
                         </div>
-                        <div id="ai-suggestions-grid" class="ai-suggestions-grid hidden">
-                            <!-- AI suggestions will be populated here -->
+                    </div>
+                    <div class="content-card">
+                        <h3>可读性分析</h3>
+                        <div id="readability-analysis" class="content-details">
+                            <!-- Readability analysis -->
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <!-- SEO问题列表 -->
-            <div class="report-section">
-                <div class="section-title">SEO问题详情</div>
-                <div class="section-content">
-                    <div id="issues-container">
-                        <!-- Issues will be populated here -->
+            <!-- Performance Analysis -->
+            <section class="performance-section">
+                <h2>性能分析</h2>
+                <div class="performance-grid">
+                    <div class="perf-card">
+                        <h3>页面性能</h3>
+                        <div id="page-performance" class="perf-details">
+                            <!-- Page performance details -->
+                        </div>
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
     </div>
 
     <script src="detailed-report.js"></script>
 </body>
+
 </html>
