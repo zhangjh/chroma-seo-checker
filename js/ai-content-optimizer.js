@@ -4,6 +4,11 @@
 class AIContentOptimizer {
     constructor() {
         this.session = null;
+        this.progressCallback = null;
+    }
+
+    setProgressCallback(callback) {
+        this.progressCallback = callback;
     }
 
     async ensureSession() {
@@ -16,17 +21,101 @@ class AIContentOptimizer {
     async createSession() {
         try {
             console.log('[AI Optimizer] 开始创建Gemini Nano会话');
-            
+
             // 检查Gemini Nano是否可用
             console.log('[AI Optimizer] 检查Gemini Nano可用性...');
-            const availability = await LanguageModel.availability();
+            let availability = await LanguageModel.availability();
             console.log('[AI Optimizer] Gemini Nano状态:', availability);
 
-            if (availability !== 'available') {
-                throw new Error(`Gemini Nano不可用。状态: ${availability || 'unknown'}。请确保使用Chrome 127+版本并启用Prompt API功能：chrome://flags/#prompt-api-for-gemini-nano`);
+            // 处理模型下载情况
+            if (availability === 'downloadable') {
+                console.log('[AI Optimizer] 模型需要下载，开始下载过程...');
+
+                // 通知开始下载
+                if (this.progressCallback) {
+                    this.progressCallback({
+                        type: 'download_start',
+                        message: '正在下载Gemini Nano模型...',
+                        progress: 0
+                    });
+                }
+
+                // 创建临时会话以触发下载并监听进度
+                try {
+                    const tempSession = await LanguageModel.create({
+                        monitor: (m) => {
+                            m.addEventListener('downloadprogress', (e) => {
+                                const progress = Math.round(e.loaded * 100);
+                                console.log(`[AI Optimizer] 模型下载进度: ${progress}%`);
+
+                                // 通知下载进度
+                                if (this.progressCallback) {
+                                    this.progressCallback({
+                                        type: 'download_progress',
+                                        message: `正在下载Gemini Nano模型... ${progress}%`,
+                                        progress: progress
+                                    });
+                                }
+                            });
+                        }
+                    });
+
+                    console.log('[AI Optimizer] 模型下载已开始，等待完成...');
+
+                    // 通知下载完成，等待状态确认
+                    if (this.progressCallback) {
+                        this.progressCallback({
+                            type: 'download_complete',
+                            message: '模型下载完成，正在初始化...',
+                            progress: 100
+                        });
+                    }
+
+                    // 等待下载完成，持续检查状态直到可用
+                    let downloadComplete = false;
+                    while (!downloadComplete) {
+                        await new Promise(resolve => setTimeout(resolve, 1000)); // 每秒检查一次
+                        availability = await LanguageModel.availability();
+
+                        if (availability === 'available') {
+                            downloadComplete = true;
+                            console.log('[AI Optimizer] 模型状态确认为可用！');
+
+                            // 通知初始化完成
+                            if (this.progressCallback) {
+                                this.progressCallback({
+                                    type: 'ready',
+                                    message: 'Gemini Nano已准备就绪',
+                                    progress: 100
+                                });
+                            }
+                        }
+                    }
+
+                    // 清理临时会话
+                    if (tempSession) {
+                        try {
+                            tempSession.destroy();
+                        } catch (e) {
+                            console.warn('[AI Optimizer] 清理临时会话失败:', e);
+                        }
+                    }
+                } catch (downloadError) {
+                    console.error('[AI Optimizer] 模型下载失败:', downloadError);
+                    throw new Error(`模型下载失败: ${downloadError.message}。请检查网络连接并重试。`);
+                }
+            } else if (availability !== 'available') {
+                const errorMessages = {
+                    'not-available': 'Gemini Nano不可用。请确保使用Chrome 127+版本并启用Prompt API功能：chrome://flags/#prompt-api-for-gemini-nano',
+                    'after-download': '模型下载后需要重启浏览器才能使用',
+                    'no': 'Gemini Nano功能未启用'
+                };
+
+                const message = errorMessages[availability] || `Gemini Nano状态异常: ${availability}`;
+                throw new Error(message);
             }
 
-            // 创建AI会话
+            // 创建真正的AI会话
             console.log('[AI Optimizer] 开始创建AI会话...');
             this.session = await LanguageModel.create({
                 initialPrompts: [

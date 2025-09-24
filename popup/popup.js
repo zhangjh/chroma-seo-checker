@@ -6,6 +6,7 @@ class SimplePopupUI {
     this.elements = this.getUIElements();
     this.currentFilter = 'all';
     this.initializeEventListeners();
+    this.initializeMessageListener();
   }
 
   getUIElements() {
@@ -91,6 +92,23 @@ class SimplePopupUI {
       });
     }
 
+  }
+
+  initializeMessageListener() {
+    // Listen for progress updates from background script
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      if (message.type === 'AI_PROGRESS_UPDATE') {
+        const progress = message.progress;
+        
+        // Update the UI with progress information
+        if (progress) {
+          this.updateSuggestionsStatus(progress.message, 'loading');
+          console.log('[Popup] 收到AI进度更新:', progress);
+        }
+        
+        sendResponse({ received: true });
+      }
+    });
   }
 
   initializeUI() {
@@ -861,31 +879,42 @@ class SimplePopupUI {
       }
       console.log('[Popup] 当前标签页ID:', tab.id);
 
-      // Request AI suggestions from background with timeout
-      console.log('[Popup] 向background发送AI建议请求...');
-      const response = await Promise.race([
-        chrome.runtime.sendMessage({
-          action: 'generateAISuggestions',
-          tabId: tab.id
-        }),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('AI建议生成超时（30秒），请检查Gemini Nano是否正常工作')), 30000)
-        )
-      ]);
-      console.log('[Popup] 收到background响应:', response);
+      // Start monitoring AI progress
+      const progressMonitor = this.startAIProgressMonitoring(tab.id);
 
-      if (response.error) {
-        throw new Error(response.error);
+      try {
+        // Request AI suggestions from background with timeout
+        console.log('[Popup] 向background发送AI建议请求...');
+        const response = await Promise.race([
+          chrome.runtime.sendMessage({
+            action: 'generateAISuggestions',
+            tabId: tab.id
+          }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('AI建议生成超时（60秒），请检查Gemini Nano是否正常工作')), 60000)
+          )
+        ]);
+        console.log('[Popup] 收到background响应:', response);
+
+        if (response.error) {
+          throw new Error(response.error);
+        }
+
+        // Display the suggestions
+        this.displayAISuggestions(response.suggestions);
+        this.updateSuggestionsStatus('AI建议生成完成', 'success');
+        
+        // Hide status after 2 seconds
+        setTimeout(() => {
+          this.hideSuggestionsStatus();
+        }, 2000);
+
+      } finally {
+        // Stop progress monitoring
+        if (progressMonitor) {
+          clearInterval(progressMonitor);
+        }
       }
-
-      // Display the suggestions
-      this.displayAISuggestions(response.suggestions);
-      this.updateSuggestionsStatus('AI建议生成完成', 'success');
-      
-      // Hide status after 2 seconds
-      setTimeout(() => {
-        this.hideSuggestionsStatus();
-      }, 2000);
 
     } catch (error) {
       this.updateSuggestionsStatus(error.message, 'error');
@@ -893,6 +922,44 @@ class SimplePopupUI {
     } finally {
       this.showSuggestionsLoading(false);
     }
+  }
+
+  startAIProgressMonitoring(tabId) {
+    let lastProgressType = null;
+    
+    const progressInterval = setInterval(async () => {
+      try {
+        const response = await chrome.runtime.sendMessage({
+          action: 'getAIProgress',
+          tabId: tabId
+        });
+
+        if (response.success && response.progress) {
+          const progress = response.progress;
+          
+          // Only update if progress type changed or it's a download progress update
+          if (progress.type !== lastProgressType || progress.type === 'download_progress') {
+            this.updateSuggestionsStatus(progress.message, 'loading');
+            lastProgressType = progress.type;
+            
+            // Log progress for debugging
+            console.log('[Popup] AI进度更新:', progress);
+          }
+          
+          // If ready, we can stop monitoring soon
+          if (progress.type === 'ready') {
+            setTimeout(() => {
+              clearInterval(progressInterval);
+            }, 1000);
+          }
+        }
+      } catch (error) {
+        // Ignore errors during progress monitoring
+        console.warn('[Popup] 进度监控错误:', error);
+      }
+    }, 1000); // Check every second
+
+    return progressInterval;
   }
 
   refreshAnalysis() {

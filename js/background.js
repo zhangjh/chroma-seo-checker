@@ -109,6 +109,10 @@ class SimpleBackgroundService {
           await this.handleGenerateAISuggestions(message, sendResponse);
           break;
         
+        case 'getAIProgress':
+          await this.handleGetAIProgress(message, sendResponse);
+          break;
+        
         default:
           sendResponse({ error: 'Unknown action' });
       }
@@ -379,6 +383,29 @@ class SimpleBackgroundService {
         throw new Error('请先运行SEO分析，然后再生成AI建议');
       }
 
+      // Set up progress callback to communicate with popup
+      this.aiOptimizer.setProgressCallback((progressInfo) => {
+        // Store progress info for the tab
+        this.analysisStatus.set(tabId, {
+          type: 'ai_progress',
+          ...progressInfo,
+          timestamp: Date.now()
+        });
+        
+        // Try to send progress to popup if it's listening
+        try {
+          chrome.runtime.sendMessage({
+            type: 'AI_PROGRESS_UPDATE',
+            tabId: tabId,
+            progress: progressInfo
+          }).catch(() => {
+            // Popup might not be open, ignore error
+          });
+        } catch (e) {
+          // Ignore messaging errors
+        }
+      });
+
       // Get the original analysis data from storage or reconstruct it
       console.log('[Background] 获取分析数据...');
       const analysisData = await this.getAnalysisDataForReport(report);
@@ -388,6 +415,9 @@ class SimpleBackgroundService {
       console.log('[Background] 开始生成AI优化建议，SEO问题数量:', report.issues?.length || 0);
       const optimizations = await this.aiOptimizer.generateContentOptimizations(analysisData, report.issues);
       console.log('[Background] AI优化建议生成完成');
+      
+      // Clear progress callback
+      this.aiOptimizer.setProgressCallback(null);
       
       // Update report with AI suggestions
       report.suggestions = optimizations;
@@ -401,8 +431,43 @@ class SimpleBackgroundService {
         suggestions: optimizations 
       });
     } catch (error) {
+      // Clear progress callback on error
+      this.aiOptimizer.setProgressCallback(null);
+      
       sendResponse({ 
         error: error.message || '生成AI建议失败' 
+      });
+    }
+  }
+
+  async handleGetAIProgress(message, sendResponse) {
+    try {
+      const { tabId } = message;
+      
+      if (!tabId) {
+        throw new Error('缺少标签页ID');
+      }
+
+      const progressInfo = this.analysisStatus.get(tabId);
+      
+      if (progressInfo && progressInfo.type === 'ai_progress') {
+        sendResponse({
+          success: true,
+          progress: {
+            type: progressInfo.type,
+            message: progressInfo.message,
+            progress: progressInfo.progress
+          }
+        });
+      } else {
+        sendResponse({
+          success: true,
+          progress: null
+        });
+      }
+    } catch (error) {
+      sendResponse({
+        error: error.message || '获取AI进度失败'
       });
     }
   }

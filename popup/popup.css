@@ -984,6 +984,22 @@ body {
     font-size: 14px;
 }
 
+/* AI Download Progress */
+.suggestions-status.loading {
+    background: #fff3cd;
+    border-bottom-color: #ffeaa7;
+    color: #856404;
+}
+
+.suggestions-status.loading .status-icon {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
 /* Actions Section */
 .actions-section {
     background: white;
