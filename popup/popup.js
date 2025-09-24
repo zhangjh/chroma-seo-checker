@@ -495,12 +495,404 @@ class SimplePopupUI {
   }
 
   displaySuggestions(suggestions) {
-    // Suggestions display implementation would go here
-    // TODO: Implement suggestions display when needed
+    if (suggestions) {
+      this.displayAISuggestions(suggestions);
+    }
+  }
+
+  displayAISuggestions(suggestions) {
+    if (!this.elements.suggestionsList) return;
+
+    // Clear existing suggestions
+    this.elements.suggestionsList.innerHTML = '';
+    
+    // Hide no-suggestions message
+    if (this.elements.noSuggestions) {
+      this.elements.noSuggestions.style.display = 'none';
+    }
+
+    // Check if there's a summary (no issues found)
+    if (suggestions.summary) {
+      this.createSummarySection(suggestions.summary);
+      return;
+    }
+
+    // Create suggestions sections only for detected issues
+    if (suggestions.titleOptimization) {
+      this.createTitleOptimizationSection(suggestions.titleOptimization);
+    }
+    if (suggestions.metaDescriptionSuggestion) {
+      this.createMetaDescriptionSection(suggestions.metaDescriptionSuggestion);
+    }
+    if (suggestions.contentImprovements) {
+      this.createContentImprovementsSection(suggestions.contentImprovements);
+    }
+    if (suggestions.keywordSuggestions) {
+      this.createKeywordSuggestionsSection(suggestions.keywordSuggestions);
+    }
+    if (suggestions.structureRecommendations) {
+      this.createStructureRecommendationsSection(suggestions.structureRecommendations);
+    }
+  }
+
+  createTitleOptimizationSection(titleOpt) {
+    if (!titleOpt) return;
+
+    const section = document.createElement('div');
+    section.className = 'suggestion-section';
+    
+    const hasImprovement = titleOpt.suggestion && titleOpt.suggestion !== '当前标题已经很好';
+    
+    section.innerHTML = `
+      <div class="suggestion-header">
+        <h4>📝 标题优化建议</h4>
+        <span class="suggestion-status ${titleOpt.length?.status || 'unknown'}">${this.getStatusText(titleOpt.length?.status)}</span>
+      </div>
+      <div class="suggestion-content">
+        ${titleOpt.current ? `
+        <div class="current-content">
+          <strong>当前标题:</strong>
+          <div class="content-box">${titleOpt.current}</div>
+          <small>长度: ${titleOpt.length?.current || titleOpt.current.length} 字符</small>
+        </div>` : ''}
+        
+        ${hasImprovement ? `
+        <div class="suggested-content">
+          <strong>优化建议:</strong>
+          <div class="content-box suggested">${titleOpt.suggestion}</div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('${titleOpt.suggestion.replace(/'/g, "\\'")}')">复制</button>
+        </div>` : ''}
+        
+        <div class="suggestion-reason">
+          <strong>分析:</strong> ${titleOpt.reason}
+        </div>
+        
+        ${titleOpt.improvements && titleOpt.improvements.length > 0 ? `
+        <div class="improvement-tips">
+          <strong>改进要点:</strong>
+          <ul>
+            ${titleOpt.improvements.map(tip => `<li>${tip}</li>`).join('')}
+          </ul>
+        </div>` : ''}
+        
+        ${titleOpt.keywords && titleOpt.keywords.length > 0 ? `
+        <div class="keyword-suggestions">
+          <strong>推荐关键词:</strong>
+          <div class="keyword-tags">
+            ${titleOpt.keywords.map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
+          </div>
+        </div>` : ''}
+      </div>
+    `;
+
+    this.elements.suggestionsList.appendChild(section);
+  }
+
+  createMetaDescriptionSection(metaOpt) {
+    if (!metaOpt) return;
+
+    const section = document.createElement('div');
+    section.className = 'suggestion-section';
+    
+    const hasImprovement = metaOpt.suggestion && metaOpt.suggestion !== '当前描述已经很好';
+    
+    section.innerHTML = `
+      <div class="suggestion-header">
+        <h4>📄 Meta描述优化</h4>
+        <span class="suggestion-status ${metaOpt.length?.status || 'unknown'}">${this.getStatusText(metaOpt.length?.status)}</span>
+      </div>
+      <div class="suggestion-content">
+        ${metaOpt.current ? `
+        <div class="current-content">
+          <strong>当前描述:</strong>
+          <div class="content-box">${metaOpt.current}</div>
+          <small>长度: ${metaOpt.length?.current || metaOpt.current.length} 字符</small>
+        </div>` : ''}
+        
+        ${hasImprovement ? `
+        <div class="suggested-content">
+          <strong>优化建议:</strong>
+          <div class="content-box suggested">${metaOpt.suggestion}</div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('${metaOpt.suggestion.replace(/'/g, "\\'")}')">复制</button>
+        </div>` : ''}
+        
+        ${metaOpt.template ? `
+        <div class="suggested-content">
+          <strong>建议模板:</strong>
+          <div class="content-box suggested">${metaOpt.template}</div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('${metaOpt.template.replace(/'/g, "\\'")}')">复制</button>
+        </div>` : ''}
+        
+        <div class="suggestion-reason">
+          <strong>分析:</strong> ${metaOpt.reason}
+        </div>
+        
+        ${metaOpt.guidelines && metaOpt.guidelines.length > 0 ? `
+        <div class="improvement-tips">
+          <strong>编写指南:</strong>
+          <ul>
+            ${metaOpt.guidelines.map(tip => `<li>${tip}</li>`).join('')}
+          </ul>
+        </div>` : ''}
+      </div>
+    `;
+
+    this.elements.suggestionsList.appendChild(section);
+  }
+
+  createContentImprovementsSection(improvements) {
+    if (!improvements || improvements.length === 0) return;
+
+    const section = document.createElement('div');
+    section.className = 'suggestion-section';
+    
+    section.innerHTML = `
+      <div class="suggestion-header">
+        <h4>✨ 内容改进建议</h4>
+        <span class="suggestion-count">${improvements.length} 项建议</span>
+      </div>
+      <div class="suggestion-content">
+        ${improvements.map(improvement => `
+          <div class="improvement-item ${improvement.priority}">
+            <div class="improvement-header">
+              <span class="priority-badge ${improvement.priority}">${this.getPriorityText(improvement.priority)}</span>
+              <strong>${improvement.title}</strong>
+            </div>
+            <div class="improvement-description">${improvement.description}</div>
+            ${improvement.suggestions && improvement.suggestions.length > 0 ? `
+            <div class="improvement-suggestions">
+              <strong>具体建议:</strong>
+              <ul>
+                ${improvement.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+              </ul>
+            </div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    this.elements.suggestionsList.appendChild(section);
+  }
+
+  createKeywordSuggestionsSection(keywords) {
+    if (!keywords || Object.keys(keywords).every(key => keywords[key].length === 0)) return;
+
+    const section = document.createElement('div');
+    section.className = 'suggestion-section';
+    
+    section.innerHTML = `
+      <div class="suggestion-header">
+        <h4>🔍 关键词建议</h4>
+      </div>
+      <div class="suggestion-content">
+        ${keywords.primary && keywords.primary.length > 0 ? `
+        <div class="keyword-category">
+          <strong>主要关键词:</strong>
+          <div class="keyword-list">
+            ${keywords.primary.map(kw => `
+              <div class="keyword-item">
+                <span class="keyword">${kw.keyword}</span>
+                <small>${kw.suggestion}</small>
+              </div>
+            `).join('')}
+          </div>
+        </div>` : ''}
+        
+        ${keywords.secondary && keywords.secondary.length > 0 ? `
+        <div class="keyword-category">
+          <strong>次要关键词:</strong>
+          <div class="keyword-list">
+            ${keywords.secondary.map(kw => `
+              <div class="keyword-item">
+                <span class="keyword">${kw.keyword}</span>
+                <small>${kw.suggestion}</small>
+              </div>
+            `).join('')}
+          </div>
+        </div>` : ''}
+        
+        ${keywords.longTail && keywords.longTail.length > 0 ? `
+        <div class="keyword-category">
+          <strong>长尾关键词:</strong>
+          <div class="keyword-tags">
+            ${keywords.longTail.map(kw => `<span class="keyword-tag" title="${kw.suggestion}">${kw.keyword}</span>`).join('')}
+          </div>
+        </div>` : ''}
+        
+        ${keywords.semantic && keywords.semantic.length > 0 ? `
+        <div class="keyword-category">
+          <strong>语义相关词:</strong>
+          <div class="keyword-tags">
+            ${keywords.semantic.map(kw => `<span class="keyword-tag" title="${kw.suggestion}">${kw.keyword}</span>`).join('')}
+          </div>
+        </div>` : ''}
+      </div>
+    `;
+
+    this.elements.suggestionsList.appendChild(section);
+  }
+
+  createStructureRecommendationsSection(recommendations) {
+    if (!recommendations || recommendations.length === 0) return;
+
+    const section = document.createElement('div');
+    section.className = 'suggestion-section';
+    
+    section.innerHTML = `
+      <div class="suggestion-header">
+        <h4>🏗️ 结构优化建议</h4>
+        <span class="suggestion-count">${recommendations.length} 项建议</span>
+      </div>
+      <div class="suggestion-content">
+        ${recommendations.map(rec => `
+          <div class="recommendation-item ${rec.priority}">
+            <div class="recommendation-header">
+              <span class="priority-badge ${rec.priority}">${this.getPriorityText(rec.priority)}</span>
+              <strong>${rec.title}</strong>
+            </div>
+            <div class="recommendation-description">${rec.description}</div>
+            ${rec.implementation && rec.implementation.length > 0 ? `
+            <div class="implementation-steps">
+              <strong>实施步骤:</strong>
+              <ol>
+                ${rec.implementation.map(step => `<li>${step}</li>`).join('')}
+              </ol>
+            </div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    this.elements.suggestionsList.appendChild(section);
+  }
+
+  showSuggestionsLoading(show) {
+    if (this.elements.suggestionsLoading) {
+      this.elements.suggestionsLoading.style.display = show ? 'flex' : 'none';
+    }
+  }
+
+  updateSuggestionsStatus(message, type = 'info') {
+    if (this.elements.suggestionsStatus && this.elements.suggestionsStatusText) {
+      this.elements.suggestionsStatus.classList.remove('hidden');
+      this.elements.suggestionsStatusText.textContent = message;
+      
+      // Update status icon based on type
+      const statusIcon = this.elements.suggestionsStatus.querySelector('.status-icon');
+      if (statusIcon) {
+        switch (type) {
+          case 'loading':
+            statusIcon.textContent = '⏳';
+            break;
+          case 'success':
+            statusIcon.textContent = '✅';
+            break;
+          case 'error':
+            statusIcon.textContent = '❌';
+            break;
+          default:
+            statusIcon.textContent = 'ℹ️';
+        }
+      }
+    }
+  }
+
+  hideSuggestionsStatus() {
+    if (this.elements.suggestionsStatus) {
+      this.elements.suggestionsStatus.classList.add('hidden');
+    }
+  }
+
+  getStatusText(status) {
+    const statusMap = {
+      'good': '✅ 良好',
+      'needs-improvement': '⚠️ 需改进',
+      'unknown': '❓ 未知'
+    };
+    return statusMap[status] || '❓ 未知';
+  }
+
+  createSummarySection(summary) {
+    const section = document.createElement('div');
+    section.className = 'suggestion-section summary-section';
+    
+    section.innerHTML = `
+      <div class="suggestion-header">
+        <h4>🎉 SEO状况良好</h4>
+      </div>
+      <div class="suggestion-content">
+        <div class="summary-message">
+          ${summary.message}
+        </div>
+        ${summary.suggestions && summary.suggestions.length > 0 ? `
+        <div class="summary-suggestions">
+          <strong>持续优化建议:</strong>
+          <ul>
+            ${summary.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+          </ul>
+        </div>` : ''}
+      </div>
+    `;
+
+    this.elements.suggestionsList.appendChild(section);
+  }
+
+  getPriorityText(priority) {
+    const priorityMap = {
+      'critical': '严重',
+      'high': '高',
+      'medium': '中',
+      'low': '低'
+    };
+    return priorityMap[priority] || priority;
   }
 
   async generateAISuggestions() {
-    // TODO: Implement AI suggestions
+    try {
+      console.log('[Popup] 开始生成AI建议');
+      // Show loading state
+      this.showSuggestionsLoading(true);
+      this.updateSuggestionsStatus('正在生成AI建议...', 'loading');
+
+      // Get current tab
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab.id) {
+        throw new Error('无法获取当前标签页');
+      }
+      console.log('[Popup] 当前标签页ID:', tab.id);
+
+      // Request AI suggestions from background with timeout
+      console.log('[Popup] 向background发送AI建议请求...');
+      const response = await Promise.race([
+        chrome.runtime.sendMessage({
+          action: 'generateAISuggestions',
+          tabId: tab.id
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('AI建议生成超时（30秒），请检查Gemini Nano是否正常工作')), 30000)
+        )
+      ]);
+      console.log('[Popup] 收到background响应:', response);
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      // Display the suggestions
+      this.displayAISuggestions(response.suggestions);
+      this.updateSuggestionsStatus('AI建议生成完成', 'success');
+      
+      // Hide status after 2 seconds
+      setTimeout(() => {
+        this.hideSuggestionsStatus();
+      }, 2000);
+
+    } catch (error) {
+      this.updateSuggestionsStatus(error.message, 'error');
+      console.error('Failed to generate AI suggestions:', error);
+    } finally {
+      this.showSuggestionsLoading(false);
+    }
   }
 
   refreshAnalysis() {

@@ -1,7 +1,8 @@
 // SEO Checker Background Service Worker
 
-// Import enhanced rules engine
+// Import enhanced rules engine and AI optimizer
 importScripts('enhanced-seo-rules.js');
+importScripts('ai-content-optimizer.js');
 
 // Simple storage manager
 class SimpleStorageManager {
@@ -44,6 +45,7 @@ class SimpleBackgroundService {
   constructor() {
     this.storageManager = new SimpleStorageManager();
     this.analysisStatus = new Map();
+    this.aiOptimizer = new AIContentOptimizer();
     this.initializeMessageHandlers();
   }
 
@@ -101,6 +103,10 @@ class SimpleBackgroundService {
         
         case 'getLatestReport':
           await this.handleGetLatestReport(message, sendResponse);
+          break;
+        
+        case 'generateAISuggestions':
+          await this.handleGenerateAISuggestions(message, sendResponse);
           break;
         
         default:
@@ -351,6 +357,89 @@ class SimpleBackgroundService {
         error: error.message || '获取最新报告失败' 
       });
     }
+  }
+
+  async handleGenerateAISuggestions(message, sendResponse) {
+    try {
+      const { tabId } = message;
+      
+      if (!tabId) {
+        throw new Error('缺少标签页ID');
+      }
+
+      // Get current tab URL
+      const tab = await chrome.tabs.get(tabId);
+      if (!tab.url) {
+        throw new Error('无法获取页面URL');
+      }
+
+      // Get existing report
+      const report = await this.storageManager.getReportByUrl(tab.url);
+      if (!report) {
+        throw new Error('请先运行SEO分析，然后再生成AI建议');
+      }
+
+      // Get the original analysis data from storage or reconstruct it
+      console.log('[Background] 获取分析数据...');
+      const analysisData = await this.getAnalysisDataForReport(report);
+      console.log('[Background] 分析数据获取完成');
+      
+      // Generate AI optimizations based on SEO issues
+      console.log('[Background] 开始生成AI优化建议，SEO问题数量:', report.issues?.length || 0);
+      const optimizations = await this.aiOptimizer.generateContentOptimizations(analysisData, report.issues);
+      console.log('[Background] AI优化建议生成完成');
+      
+      // Update report with AI suggestions
+      report.suggestions = optimizations;
+      report.aiGeneratedAt = new Date().toISOString();
+      
+      // Save updated report
+      await this.storageManager.saveReport(report);
+      
+      sendResponse({ 
+        success: true, 
+        suggestions: optimizations 
+      });
+    } catch (error) {
+      sendResponse({ 
+        error: error.message || '生成AI建议失败' 
+      });
+    }
+  }
+
+  async getAnalysisDataForReport(report) {
+    // Reconstruct analysis data from report
+    // This is a simplified version - in a real implementation, 
+    // you might want to store the original analysis data
+    return {
+      url: report.url,
+      timestamp: report.timestamp,
+      metaTags: {
+        title: report.technicalResults?.metaTags?.hasTitle ? 
+          (report.technicalResults.metaTags.titleLength > 0 ? 'Current Title' : '') : '',
+        description: report.technicalResults?.metaTags?.hasDescription ? 
+          (report.technicalResults.metaTags.descriptionLength > 0 ? 'Current Description' : '') : ''
+      },
+      headings: {
+        h1: report.technicalResults?.headingStructure?.h1Count > 0 ? ['Current H1'] : [],
+        h2: Array(report.technicalResults?.headingStructure?.headingDistribution?.h2 || 0).fill('H2 Title'),
+        h3: Array(report.technicalResults?.headingStructure?.headingDistribution?.h3 || 0).fill('H3 Title')
+      },
+      content: {
+        wordCount: report.contentResults?.wordCount || 0,
+        readabilityScore: report.contentResults?.readabilityScore || 0,
+        keywordDensity: report.contentResults?.keywordDensity || {},
+        contentStructure: report.contentResults?.contentStructure || {}
+      },
+      images: {
+        totalImages: report.performanceResults?.imageOptimization?.totalImages || 0,
+        imagesWithoutAlt: report.performanceResults?.imageOptimization?.imagesWithoutAlt || 0
+      },
+      links: {
+        internalLinks: report.technicalResults?.internalLinks?.internalLinksCount || 0,
+        externalLinks: report.technicalResults?.internalLinks?.externalLinksCount || 0
+      }
+    };
   }
 
   convertAnalysisToReport(analysis) {

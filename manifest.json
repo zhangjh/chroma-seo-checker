@@ -25,6 +25,7 @@
       ],
       "js": [
         "js/enhanced-content-analyzer.js",
+        "js/ai-content-optimizer.js",
         "js/page-highlighter.js",
         "js/content.js"
       ],
