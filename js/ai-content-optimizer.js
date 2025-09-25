@@ -5,6 +5,7 @@ class AIContentOptimizer {
     constructor() {
         this.session = null;
         this.progressCallback = null;
+        this.currentTabId = null;
     }
 
     setProgressCallback(callback) {
@@ -146,11 +147,14 @@ class AIContentOptimizer {
         }
     }
 
-    async generateContentOptimizations(analysis, seoIssues = []) {
+    async generateContentOptimizations(analysis, seoIssues = [], tabId = null) {
         try {
             console.log('[AI Optimizer] 开始生成内容优化建议');
             console.log('[AI Optimizer] SEO问题数量:', seoIssues.length);
             console.log('[AI Optimizer] SEO问题列表:', seoIssues.map(issue => issue.title || issue.id));
+
+            // 存储当前标签页ID，用于获取真实页面内容
+            this.currentTabId = tabId;
 
             const session = await this.ensureSession();
             console.log('[AI Optimizer] AI会话已准备就绪');
@@ -263,23 +267,51 @@ class AIContentOptimizer {
     }
 
     async optimizeTitle(analysis, session, titleIssues = []) {
-        const currentTitle = analysis.metaTags?.title || '';
-        const headings = analysis.headings || {};
-        const content = analysis.content || {};
+        // 首先尝试获取真实的页面内容
+        const realPageContent = await this.getCurrentPageContent();
+        
+        // 使用真实内容或回退到分析数据
+        const currentTitle = realPageContent?.title || analysis.metaTags?.title || '';
+        const headings = realPageContent ? {
+            h1: realPageContent.h1 || [],
+            h2: realPageContent.h2 || [],
+            h3: realPageContent.h3 || []
+        } : (analysis.headings || {});
+        const content = realPageContent ? {
+            wordCount: realPageContent.wordCount || 0,
+            keywordDensity: realPageContent.keywordDensity || {}
+        } : (analysis.content || {});
+        
+        // 获取关键词：优先使用meta keywords，否则从内容中提取
+        const metaKeywords = realPageContent?.keywordsArray || [];
+        const extractedKeywords = this.extractTopKeywords(content.keywordDensity || {});
+        const mainKeywords = metaKeywords.length > 0 ? metaKeywords : extractedKeywords;
+
+        console.log('[AI Optimizer] Title optimization - Using real page content:', !!realPageContent);
+        console.log('[AI Optimizer] Title optimization - Current title:', currentTitle);
+        console.log('[AI Optimizer] Title optimization - Meta keywords:', metaKeywords);
+        console.log('[AI Optimizer] Title optimization - Main keywords:', mainKeywords);
+        console.log('[AI Optimizer] Title optimization - Analysis data:', {
+            title: currentTitle,
+            h1: headings.h1,
+            titleIssues: titleIssues.map(issue => issue.title)
+        });
 
         const issueDescriptions = titleIssues.map(issue => issue.description || issue.title).join('; ');
         const hasLengthIssue = titleIssues.some(issue => issue.id === 'title-length' || issue.title.includes('Length'));
         const isMissing = titleIssues.some(issue => issue.id === 'missing-title' || issue.title.includes('Missing'));
 
         if (!currentTitle || isMissing) {
-            const topKeywords = this.extractTopKeywords(content.keywordDensity || {});
-            const h1Text = headings.h1?.[0] || '';
+            const h1Array = headings.h1 || [];
+            const h1Info = h1Array.length === 0 ? 'No H1 tags found' :
+                          h1Array.length === 1 ? `"${h1Array[0]}"` :
+                          `Multiple H1 tags found (${h1Array.length}): ${h1Array.map(h1 => `"${h1}"`).join(', ')}`;
             
             const prompt = `Generate an SEO-optimized title for the following webpage:
 
 SEO Issues: ${issueDescriptions}
-H1 Title: "${h1Text}"
-Main Keywords: ${topKeywords.slice(0, 5).join(', ')}
+H1 Information: ${h1Info}
+Main Keywords: ${mainKeywords.slice(0, 5).join(', ')}
 Page Word Count: ${content.wordCount || 0} words
 
 Requirements:
@@ -304,7 +336,7 @@ Please respond in JSON format:
                 return {
                     suggestion: aiResult.suggestion,
                     reason: aiResult.reason || 'AI-generated title suggestion',
-                    keywords: aiResult.keywords || topKeywords.slice(0, 5),
+                    keywords: aiResult.keywords || mainKeywords.slice(0, 5),
                     improvements: [
                         'Create descriptive title based on main page content',
                         'Include main keywords, control length to 30-60 characters',
@@ -315,16 +347,18 @@ Please respond in JSON format:
         }
 
         // Optimize existing title
-        const topKeywords = this.extractTopKeywords(content.keywordDensity || {});
-        const h1Text = headings.h1?.[0] || '';
+        const h1Array = headings.h1 || [];
+        const h1Info = h1Array.length === 0 ? 'No H1 tags found' :
+                      h1Array.length === 1 ? `"${h1Array[0]}"` :
+                      `Multiple H1 tags found (${h1Array.length}): ${h1Array.map(h1 => `"${h1}"`).join(', ')}`;
         
         const prompt = `Optimize the following webpage title based on SEO analysis results:
 
 Detected Issues: ${issueDescriptions}
 Current Title: "${currentTitle}"
 Title Length: ${currentTitle.length} characters
-H1 Title: "${h1Text}"
-Main Keywords: ${topKeywords.slice(0, 5).join(', ')}
+H1 Information: ${h1Info}
+Main Keywords: ${mainKeywords.slice(0, 5).join(', ')}
 Page Word Count: ${content.wordCount || 0} words
 Length Issue: ${hasLengthIssue ? 'Yes' : 'No'}
 
@@ -355,7 +389,7 @@ Please respond in JSON format:
                 suggestion: aiResult.optimizedTitle || aiResult.suggestion || 'Current title is already good',
                 reason: aiResult.analysis || 'AI analysis-based optimization suggestion',
                 improvements: aiResult.improvements || [],
-                keywords: aiResult.keywords || topKeywords.slice(0, 5),
+                keywords: aiResult.keywords || mainKeywords.slice(0, 5),
                 length: {
                     current: currentTitle.length,
                     optimal: '30-60 characters',
@@ -368,24 +402,42 @@ Please respond in JSON format:
     }
 
     async optimizeMetaDescription(analysis, session, metaIssues = []) {
-        const currentDescription = analysis.metaTags?.description || '';
-        const content = analysis.content || {};
-        const title = analysis.metaTags?.title || '';
+        // 首先尝试获取真实的页面内容
+        const realPageContent = await this.getCurrentPageContent();
+        
+        // 使用真实内容或回退到分析数据
+        const currentDescription = realPageContent?.description || analysis.metaTags?.description || '';
+        const title = realPageContent?.title || analysis.metaTags?.title || '';
+        const content = realPageContent ? {
+            wordCount: realPageContent.wordCount || 0,
+            keywordDensity: realPageContent.keywordDensity || {}
+        } : (analysis.content || {});
+        
+        // 获取关键词：优先使用meta keywords，否则从内容中提取
+        const metaKeywords = realPageContent?.keywordsArray || [];
+        const extractedKeywords = this.extractTopKeywords(content.keywordDensity || {});
+        const mainKeywords = metaKeywords.length > 0 ? metaKeywords : extractedKeywords;
+
+        console.log('[AI Optimizer] Meta description optimization - Using real page content:', !!realPageContent);
+        console.log('[AI Optimizer] Meta description optimization - Current description:', currentDescription);
+        console.log('[AI Optimizer] Meta description optimization - Main keywords:', mainKeywords);
 
         const issueDescriptions = metaIssues.map(issue => issue.description || issue.title).join('; ');
         const hasLengthIssue = metaIssues.some(issue => issue.id === 'description-length' || issue.title.includes('Length'));
         const isMissing = metaIssues.some(issue => issue.id === 'missing-description' || issue.title.includes('Missing'));
 
         if (!currentDescription || isMissing) {
-            const topKeywords = this.extractTopKeywords(content.keywordDensity || {});
-            const h1Text = analysis.headings?.h1?.[0] || '';
+            const h1Array = realPageContent?.h1 || analysis.headings?.h1 || [];
+            const h1Info = h1Array.length === 0 ? 'No H1 tags found' :
+                          h1Array.length === 1 ? `"${h1Array[0]}"` :
+                          `Multiple H1 tags found (${h1Array.length}): ${h1Array.map(h1 => `"${h1}"`).join(', ')}`;
             
             const prompt = `Generate an SEO-optimized Meta description for the following webpage:
 
 SEO Issues: ${issueDescriptions}
 Page Title: "${title}"
-H1 Title: "${h1Text}"
-Main Keywords: ${topKeywords.slice(0, 5).join(', ')}
+H1 Information: ${h1Info}
+Main Keywords: ${mainKeywords.slice(0, 5).join(', ')}
 Page Word Count: ${content.wordCount || 0} words
 
 Requirements:
@@ -422,15 +474,13 @@ Please respond in JSON format:
         }
 
         // Optimize existing description
-        const topKeywords = this.extractTopKeywords(content.keywordDensity || {});
-        
         const prompt = `Optimize the following webpage's Meta description based on SEO analysis results:
 
 Detected Issues: ${issueDescriptions}
 Current Description: "${currentDescription}"
 Description Length: ${currentDescription.length} characters
 Page Title: "${title}"
-Main Keywords: ${topKeywords.slice(0, 5).join(', ')}
+Main Keywords: ${mainKeywords.slice(0, 5).join(', ')}
 Length Issue: ${hasLengthIssue ? 'Yes' : 'No'}
 
 Please provide optimization suggestions for the detected issues:
@@ -456,7 +506,7 @@ Please respond in JSON format:
                 suggestion: aiResult.optimizedDescription || aiResult.description || 'Current description is already good',
                 reason: aiResult.analysis || 'AI analysis-based optimization suggestion',
                 improvements: aiResult.improvements || [],
-                keywords: topKeywords.slice(0, 5),
+                keywords: mainKeywords.slice(0, 5),
                 length: {
                     current: currentDescription.length,
                     optimal: '120-160 characters',
@@ -469,9 +519,27 @@ Please respond in JSON format:
     }
 
     async generateContentImprovements(analysis, session, contentIssues = []) {
-        const content = analysis.content || {};
-        const headings = analysis.headings || {};
-        const topKeywords = this.extractTopKeywords(content.keywordDensity || {});
+        // 首先尝试获取真实的页面内容
+        const realPageContent = await this.getCurrentPageContent();
+        
+        // 使用真实内容或回退到分析数据
+        const content = realPageContent ? {
+            wordCount: realPageContent.wordCount || 0,
+            keywordDensity: realPageContent.keywordDensity || {}
+        } : (analysis.content || {});
+        const headings = realPageContent ? {
+            h1: realPageContent.h1 || [],
+            h2: realPageContent.h2 || [],
+            h3: realPageContent.h3 || []
+        } : (analysis.headings || {});
+        
+        // 获取关键词：优先使用meta keywords，否则从内容中提取
+        const metaKeywords = realPageContent?.keywordsArray || [];
+        const extractedKeywords = this.extractTopKeywords(content.keywordDensity || {});
+        const mainKeywords = metaKeywords.length > 0 ? metaKeywords : extractedKeywords;
+
+        console.log('[AI Optimizer] Content improvements - Using real page content:', !!realPageContent);
+        console.log('[AI Optimizer] Content improvements - Main keywords:', mainKeywords);
 
         const issueDescriptions = contentIssues.map(issue => `${issue.title}: ${issue.description || ''}`).join('; ');
         
@@ -484,7 +552,7 @@ Content Statistics:
 - Readability Score: ${content.readabilityScore || 0}/100
 - H1 Count: ${headings.h1?.length || 0}
 - H2 Count: ${headings.h2?.length || 0}
-- Main Keywords: ${topKeywords.slice(0, 5).join(', ')}
+- Main Keywords: ${mainKeywords.slice(0, 5).join(', ')}
 
 Please provide improvement suggestions for the detected issues:
 1. Analyze each detected issue
@@ -517,11 +585,33 @@ Please respond in JSON format:
     }
 
     async generateKeywordSuggestions(analysis, session, keywordIssues = []) {
-        const content = analysis.content || {};
-        const title = analysis.metaTags?.title || '';
-        const headings = analysis.headings || {};
-        const existingKeywords = this.extractTopKeywords(content.keywordDensity || {});
-        const h1Text = headings.h1?.[0] || '';
+        // 首先尝试获取真实的页面内容
+        const realPageContent = await this.getCurrentPageContent();
+        
+        // 使用真实内容或回退到分析数据
+        const title = realPageContent?.title || analysis.metaTags?.title || '';
+        const headings = realPageContent ? {
+            h1: realPageContent.h1 || [],
+            h2: realPageContent.h2 || [],
+            h3: realPageContent.h3 || []
+        } : (analysis.headings || {});
+        const content = realPageContent ? {
+            wordCount: realPageContent.wordCount || 0,
+            keywordDensity: realPageContent.keywordDensity || {}
+        } : (analysis.content || {});
+        
+        // 获取关键词：优先使用meta keywords，否则从内容中提取
+        const metaKeywords = realPageContent?.keywordsArray || [];
+        const extractedKeywords = this.extractTopKeywords(content.keywordDensity || {});
+        const existingKeywords = metaKeywords.length > 0 ? metaKeywords : extractedKeywords;
+        const h1Array = headings.h1 || [];
+        const h1Info = h1Array.length === 0 ? 'No H1 tags found' :
+                      h1Array.length === 1 ? `"${h1Array[0]}"` :
+                      `Multiple H1 tags found (${h1Array.length}): ${h1Array.map(h1 => `"${h1}"`).join(', ')}`;
+
+        console.log('[AI Optimizer] Keyword suggestions - Using real page content:', !!realPageContent);
+        console.log('[AI Optimizer] Keyword suggestions - Meta keywords:', metaKeywords);
+        console.log('[AI Optimizer] Keyword suggestions - Existing keywords:', existingKeywords);
 
         const issueDescriptions = keywordIssues.length > 0
             ? keywordIssues.map(issue => `${issue.title}: ${issue.description || ''}`).join('; ')
@@ -531,7 +621,7 @@ Please respond in JSON format:
 
 Related Issues: ${issueDescriptions}
 Page Title: "${title}"
-H1 Title: "${h1Text}"
+H1 Information: ${h1Info}
 Current Keywords: ${existingKeywords.slice(0, 5).join(', ')}
 Content Word Count: ${content.wordCount || 0}
 
@@ -615,6 +705,34 @@ Please respond in JSON format:
         }
 
         throw new Error('AI failed to generate valid structure optimization suggestions');
+    }
+
+    // 获取当前页面的真实内容
+    async getCurrentPageContent() {
+        if (!this.currentTabId) {
+            console.warn('[AI Optimizer] No tab ID available, cannot fetch real page content');
+            return null;
+        }
+
+        try {
+            // 向content script发送消息获取当前页面内容
+            const response = await chrome.tabs.sendMessage(this.currentTabId, {
+                type: 'GET_CURRENT_PAGE_CONTENT'
+            });
+
+            if (response && response.success) {
+                console.log('[AI Optimizer] Successfully fetched real page content:', {
+                    title: response.data.title,
+                    description: response.data.description,
+                    h1Count: response.data.h1?.length || 0
+                });
+                return response.data;
+            }
+        } catch (error) {
+            console.warn('[AI Optimizer] Failed to fetch real page content:', error);
+        }
+
+        return null;
     }
 
     // Helper methods

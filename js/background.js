@@ -433,7 +433,7 @@ class SimpleBackgroundService {
 
       // Generate AI optimizations based on SEO issues
       console.log('[Background] Starting AI optimization suggestions, SEO issues count:', report.issues?.length || 0);
-      const optimizations = await this.aiOptimizer.generateContentOptimizations(analysisData, report.issues);
+      const optimizations = await this.aiOptimizer.generateContentOptimizations(analysisData, report.issues, tabId);
       console.log('[Background] AI optimization suggestions completed');
 
       // Clear progress callback
@@ -496,19 +496,18 @@ class SimpleBackgroundService {
     // Reconstruct analysis data from report
     // This is a simplified version - in a real implementation, 
     // you might want to store the original analysis data
-    return {
+    
+    const reconstructedData = {
       url: report.url,
       timestamp: report.timestamp,
       metaTags: {
-        title: report.technicalResults?.metaTags?.hasTitle ?
-          (report.technicalResults.metaTags.titleLength > 0 ? 'Current Title' : '') : '',
-        description: report.technicalResults?.metaTags?.hasDescription ?
-          (report.technicalResults.metaTags.descriptionLength > 0 ? 'Current Description' : '') : ''
+        title: report.technicalResults?.metaTags?.title || '',
+        description: report.technicalResults?.metaTags?.description || ''
       },
       headings: {
-        h1: report.technicalResults?.headingStructure?.h1Count > 0 ? ['Current H1'] : [],
-        h2: Array(report.technicalResults?.headingStructure?.headingDistribution?.h2 || 0).fill('H2 Title'),
-        h3: Array(report.technicalResults?.headingStructure?.headingDistribution?.h3 || 0).fill('H3 Title')
+        h1: report.technicalResults?.headingStructure?.h1Content || [],
+        h2: report.technicalResults?.headingStructure?.h2Content || [],
+        h3: report.technicalResults?.headingStructure?.h3Content || []
       },
       content: {
         wordCount: report.contentResults?.wordCount || 0,
@@ -525,6 +524,14 @@ class SimpleBackgroundService {
         externalLinks: report.technicalResults?.internalLinks?.externalLinksCount || 0
       }
     };
+    
+    console.log('[Background] Reconstructed analysis data:', {
+      title: reconstructedData.metaTags.title,
+      description: reconstructedData.metaTags.description,
+      h1: reconstructedData.headings.h1
+    });
+    
+    return reconstructedData;
   }
 
   convertAnalysisToReport(analysis) {
@@ -550,8 +557,10 @@ class SimpleBackgroundService {
         technicalResults: {
           metaTags: {
             hasTitle: !!analysis.metaTags?.title,
+            title: analysis.metaTags?.title || '',
             titleLength: analysis.metaTags?.title?.length || 0,
             hasDescription: !!analysis.metaTags?.description,
+            description: analysis.metaTags?.description || '',
             descriptionLength: analysis.metaTags?.description?.length || 0,
             hasKeywords: !!analysis.metaTags?.keywords,
             hasOpenGraph: Object.keys(analysis.metaTags?.ogTags || {}).length > 0,
@@ -560,6 +569,9 @@ class SimpleBackgroundService {
           headingStructure: {
             hasH1: (analysis.headings?.h1?.length || 0) > 0,
             h1Count: analysis.headings?.h1?.length || 0,
+            h1Content: analysis.headings?.h1 || [],
+            h2Content: analysis.headings?.h2 || [],
+            h3Content: analysis.headings?.h3 || [],
             headingHierarchy: true,
             headingDistribution: {
               h1: analysis.headings?.h1?.length || 0,
