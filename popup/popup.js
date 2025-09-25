@@ -883,17 +883,12 @@ class SimplePopupUI {
       const progressMonitor = this.startAIProgressMonitoring(tab.id);
 
       try {
-        // Request AI suggestions from background with timeout
+        // Request AI suggestions from background
         console.log('[Popup] 向background发送AI建议请求...');
-        const response = await Promise.race([
-          chrome.runtime.sendMessage({
-            action: 'generateAISuggestions',
-            tabId: tab.id
-          }),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('AI建议生成超时（60秒），请检查Gemini Nano是否正常工作')), 60000)
-          )
-        ]);
+        const response = await chrome.runtime.sendMessage({
+          action: 'generateAISuggestions',
+          tabId: tab.id
+        });
         console.log('[Popup] 收到background响应:', response);
 
         if (response.error) {

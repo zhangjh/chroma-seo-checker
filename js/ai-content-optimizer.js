@@ -213,7 +213,7 @@ class AIContentOptimizer {
                 issue.id === 'keyword-density'
             );
 
-            if (keywordIssues.length > 0 || Object.keys(optimizations).length > 0) {
+            if (keywordIssues.length > 0) {
                 console.log('[AI Optimizer] 开始生成关键词建议');
                 // 如果有其他优化建议，也提供关键词建议
                 optimizations.keywordSuggestions = await this.generateKeywordSuggestions(analysis, session, keywordIssues);

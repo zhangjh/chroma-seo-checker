@@ -46,6 +46,11 @@ class DetailedReportUI {
       // Performance analysis elements
       pagePerformance: document.getElementById('page-performance'),
       
+      // AI suggestions elements
+      aiSuggestionsContent: document.getElementById('ai-suggestions-content'),
+      aiSuggestionsLoading: document.getElementById('ai-suggestions-loading'),
+      aiSuggestionsList: document.getElementById('ai-suggestions-list'),
+      
       // Action buttons
       retryBtn: document.getElementById('retry-btn'),
       backBtn: document.getElementById('back-btn'),
@@ -127,6 +132,9 @@ class DetailedReportUI {
     
     // Update performance analysis
     this.displayPerformanceAnalysis(report.performanceResults);
+    
+    // Update AI suggestions
+    this.displayAISuggestions(report.suggestions);
 
     this.showReport();
   }
@@ -540,6 +548,329 @@ class DetailedReportUI {
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  displayAISuggestions(suggestions) {
+    if (!this.elements.aiSuggestionsList) return;
+
+    // Clear existing content
+    this.elements.aiSuggestionsList.innerHTML = '';
+    
+    // Check if AI suggestions exist and have content
+    const hasAISuggestions = suggestions && (
+      suggestions.titleOptimization || 
+      suggestions.metaDescriptionSuggestion || 
+      (suggestions.contentImprovements && suggestions.contentImprovements.length > 0) ||
+      suggestions.keywordSuggestions || 
+      (suggestions.structureRecommendations && suggestions.structureRecommendations.length > 0) ||
+      suggestions.summary
+    );
+    
+    if (!hasAISuggestions) {
+      // Show loading/not generated message
+      if (this.elements.aiSuggestionsLoading) {
+        this.elements.aiSuggestionsLoading.classList.remove('hidden');
+      }
+      return;
+    }
+
+    // Hide loading message
+    if (this.elements.aiSuggestionsLoading) {
+      this.elements.aiSuggestionsLoading.classList.add('hidden');
+    }
+
+    // Check if there's a summary (no issues found)
+    if (suggestions.summary) {
+      this.createAISummarySection(suggestions.summary);
+      return;
+    }
+
+    // Create suggestions sections
+    if (suggestions.titleOptimization) {
+      this.createAITitleSection(suggestions.titleOptimization);
+    }
+    if (suggestions.metaDescriptionSuggestion) {
+      this.createAIMetaSection(suggestions.metaDescriptionSuggestion);
+    }
+    if (suggestions.contentImprovements && suggestions.contentImprovements.length > 0) {
+      this.createAIContentSection(suggestions.contentImprovements);
+    }
+    if (suggestions.keywordSuggestions) {
+      this.createAIKeywordSection(suggestions.keywordSuggestions);
+    }
+    if (suggestions.structureRecommendations && suggestions.structureRecommendations.length > 0) {
+      this.createAIStructureSection(suggestions.structureRecommendations);
+    }
+  }
+
+  createAISummarySection(summary) {
+    const section = document.createElement('div');
+    section.className = 'ai-suggestion-card summary-card';
+    
+    section.innerHTML = `
+      <div class="ai-card-header">
+        <h3>🎉 SEO状况良好</h3>
+      </div>
+      <div class="ai-card-content">
+        <div class="summary-message">
+          ${summary.message}
+        </div>
+        ${summary.suggestions && summary.suggestions.length > 0 ? `
+        <div class="summary-suggestions">
+          <h4>持续优化建议:</h4>
+          <ul>
+            ${summary.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+          </ul>
+        </div>` : ''}
+      </div>
+    `;
+
+    this.elements.aiSuggestionsList.appendChild(section);
+  }
+
+  createAITitleSection(titleOpt) {
+    if (!titleOpt) return;
+    
+    const section = document.createElement('div');
+    section.className = 'ai-suggestion-card';
+    
+    const hasImprovement = titleOpt.suggestion && titleOpt.suggestion !== '当前标题已经很好';
+    
+    section.innerHTML = `
+      <div class="ai-card-header">
+        <h3>📝 标题优化建议</h3>
+        <span class="ai-status ${titleOpt.length?.status || 'unknown'}">${this.getAIStatusText(titleOpt.length?.status)}</span>
+      </div>
+      <div class="ai-card-content">
+        ${titleOpt.current ? `
+        <div class="current-content">
+          <h4>当前标题:</h4>
+          <div class="content-display">${titleOpt.current}</div>
+          <small class="content-meta">长度: ${titleOpt.length?.current || titleOpt.current.length} 字符</small>
+        </div>` : ''}
+        
+        ${hasImprovement ? `
+        <div class="suggested-content">
+          <h4>优化建议:</h4>
+          <div class="content-display suggested">${titleOpt.suggestion}</div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('${titleOpt.suggestion.replace(/'/g, "\\'")}')">复制建议</button>
+        </div>` : ''}
+        
+        <div class="ai-analysis">
+          <h4>AI分析:</h4>
+          <p>${titleOpt.reason}</p>
+        </div>
+        
+        ${titleOpt.improvements && titleOpt.improvements.length > 0 ? `
+        <div class="improvement-points">
+          <h4>改进要点:</h4>
+          <ul>
+            ${titleOpt.improvements.map(tip => `<li>${tip}</li>`).join('')}
+          </ul>
+        </div>` : ''}
+        
+        ${titleOpt.keywords && titleOpt.keywords.length > 0 ? `
+        <div class="keyword-recommendations">
+          <h4>推荐关键词:</h4>
+          <div class="keyword-tags">
+            ${titleOpt.keywords.map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
+          </div>
+        </div>` : ''}
+      </div>
+    `;
+
+    this.elements.aiSuggestionsList.appendChild(section);
+  }
+
+  createAIMetaSection(metaOpt) {
+    if (!metaOpt) return;
+    
+    const section = document.createElement('div');
+    section.className = 'ai-suggestion-card';
+    
+    const hasImprovement = metaOpt.suggestion && metaOpt.suggestion !== '当前描述已经很好';
+    
+    section.innerHTML = `
+      <div class="ai-card-header">
+        <h3>📄 Meta描述优化</h3>
+        <span class="ai-status ${metaOpt.length?.status || 'unknown'}">${this.getAIStatusText(metaOpt.length?.status)}</span>
+      </div>
+      <div class="ai-card-content">
+        ${metaOpt.current ? `
+        <div class="current-content">
+          <h4>当前描述:</h4>
+          <div class="content-display">${metaOpt.current}</div>
+          <small class="content-meta">长度: ${metaOpt.length?.current || metaOpt.current.length} 字符</small>
+        </div>` : ''}
+        
+        ${hasImprovement ? `
+        <div class="suggested-content">
+          <h4>优化建议:</h4>
+          <div class="content-display suggested">${metaOpt.suggestion}</div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('${metaOpt.suggestion.replace(/'/g, "\\'")}')">复制建议</button>
+        </div>` : ''}
+        
+        <div class="ai-analysis">
+          <h4>AI分析:</h4>
+          <p>${metaOpt.reason}</p>
+        </div>
+        
+        ${metaOpt.guidelines && metaOpt.guidelines.length > 0 ? `
+        <div class="guidelines">
+          <h4>编写指南:</h4>
+          <ul>
+            ${metaOpt.guidelines.map(tip => `<li>${tip}</li>`).join('')}
+          </ul>
+        </div>` : ''}
+      </div>
+    `;
+
+    this.elements.aiSuggestionsList.appendChild(section);
+  }
+
+  createAIContentSection(improvements) {
+    if (!improvements || !Array.isArray(improvements) || improvements.length === 0) return;
+    
+    const section = document.createElement('div');
+    section.className = 'ai-suggestion-card';
+    
+    section.innerHTML = `
+      <div class="ai-card-header">
+        <h3>✨ 内容改进建议</h3>
+        <span class="ai-count">${improvements.length} 项建议</span>
+      </div>
+      <div class="ai-card-content">
+        ${improvements.map(improvement => `
+          <div class="improvement-item ${improvement.priority}">
+            <div class="improvement-header">
+              <span class="priority-badge ${improvement.priority}">${this.getAIPriorityText(improvement.priority)}</span>
+              <h4>${improvement.title}</h4>
+            </div>
+            <div class="improvement-description">${improvement.description}</div>
+            ${improvement.suggestions && improvement.suggestions.length > 0 ? `
+            <div class="improvement-suggestions">
+              <h5>具体建议:</h5>
+              <ul>
+                ${improvement.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+              </ul>
+            </div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    this.elements.aiSuggestionsList.appendChild(section);
+  }
+
+  createAIKeywordSection(keywords) {
+    if (!keywords) return;
+    
+    const section = document.createElement('div');
+    section.className = 'ai-suggestion-card';
+    
+    section.innerHTML = `
+      <div class="ai-card-header">
+        <h3>🔍 关键词建议</h3>
+      </div>
+      <div class="ai-card-content">
+        ${keywords.primary && keywords.primary.length > 0 ? `
+        <div class="keyword-category">
+          <h4>主要关键词:</h4>
+          <div class="keyword-list">
+            ${keywords.primary.map(kw => `
+              <div class="keyword-item">
+                <span class="keyword">${kw.keyword}</span>
+                <small class="keyword-suggestion">${kw.suggestion}</small>
+              </div>
+            `).join('')}
+          </div>
+        </div>` : ''}
+        
+        ${keywords.secondary && keywords.secondary.length > 0 ? `
+        <div class="keyword-category">
+          <h4>次要关键词:</h4>
+          <div class="keyword-list">
+            ${keywords.secondary.map(kw => `
+              <div class="keyword-item">
+                <span class="keyword">${kw.keyword}</span>
+                <small class="keyword-suggestion">${kw.suggestion}</small>
+              </div>
+            `).join('')}
+          </div>
+        </div>` : ''}
+        
+        ${keywords.longTail && keywords.longTail.length > 0 ? `
+        <div class="keyword-category">
+          <h4>长尾关键词:</h4>
+          <div class="keyword-tags">
+            ${keywords.longTail.map(kw => `<span class="keyword-tag" title="${kw.suggestion}">${kw.keyword}</span>`).join('')}
+          </div>
+        </div>` : ''}
+        
+        ${keywords.semantic && keywords.semantic.length > 0 ? `
+        <div class="keyword-category">
+          <h4>语义相关词:</h4>
+          <div class="keyword-tags">
+            ${keywords.semantic.map(kw => `<span class="keyword-tag" title="${kw.suggestion}">${kw.keyword}</span>`).join('')}
+          </div>
+        </div>` : ''}
+      </div>
+    `;
+
+    this.elements.aiSuggestionsList.appendChild(section);
+  }
+
+  createAIStructureSection(recommendations) {
+    if (!recommendations || !Array.isArray(recommendations) || recommendations.length === 0) return;
+    
+    const section = document.createElement('div');
+    section.className = 'ai-suggestion-card';
+    
+    section.innerHTML = `
+      <div class="ai-card-header">
+        <h3>🏗️ 结构优化建议</h3>
+        <span class="ai-count">${recommendations.length} 项建议</span>
+      </div>
+      <div class="ai-card-content">
+        ${recommendations.map(rec => `
+          <div class="recommendation-item ${rec.priority}">
+            <div class="recommendation-header">
+              <span class="priority-badge ${rec.priority}">${this.getAIPriorityText(rec.priority)}</span>
+              <h4>${rec.title}</h4>
+            </div>
+            <div class="recommendation-description">${rec.description}</div>
+            ${rec.implementation && rec.implementation.length > 0 ? `
+            <div class="implementation-steps">
+              <h5>实施步骤:</h5>
+              <ol>
+                ${rec.implementation.map(step => `<li>${step}</li>`).join('')}
+              </ol>
+            </div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    this.elements.aiSuggestionsList.appendChild(section);
+  }
+
+  getAIStatusText(status) {
+    const statusMap = {
+      'good': '✅ 良好',
+      'needs-improvement': '⚠️ 需改进',
+      'unknown': '❓ 未知'
+    };
+    return statusMap[status] || '❓ 未知';
+  }
+
+  getAIPriorityText(priority) {
+    const priorityMap = {
+      'critical': '🔴 严重',
+      'high': '🟠 高',
+      'medium': '🟡 中',
+      'low': '🟢 低'
+    };
+    return priorityMap[priority] || '❓ 未知';
   }
 
   exportToPDF() {
