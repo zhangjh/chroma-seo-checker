@@ -267,33 +267,34 @@ class AIContentOptimizer {
         const headings = analysis.headings || {};
         const content = analysis.content || {};
 
-        // 分析具体的标题问题
-        const issueDescriptions = titleIssues.map(issue => issue.description || issue.title).join('；');
-        const hasLengthIssue = titleIssues.some(issue => issue.id === 'title-length' || issue.title.includes('长度'));
-        const isMissing = titleIssues.some(issue => issue.id === 'missing-title' || issue.title.includes('缺少'));
+        const issueDescriptions = titleIssues.map(issue => issue.description || issue.title).join('; ');
+        const hasLengthIssue = titleIssues.some(issue => issue.id === 'title-length' || issue.title.includes('Length'));
+        const isMissing = titleIssues.some(issue => issue.id === 'missing-title' || issue.title.includes('Missing'));
 
         if (!currentTitle || isMissing) {
             const topKeywords = this.extractTopKeywords(content.keywordDensity || {});
             const h1Text = headings.h1?.[0] || '';
+            
+            const prompt = `Generate an SEO-optimized title for the following webpage:
 
-            const prompt = `为以下网页生成SEO优化的标题：
+SEO Issues: ${issueDescriptions}
+H1 Title: "${h1Text}"
+Main Keywords: ${topKeywords.slice(0, 5).join(', ')}
+Page Word Count: ${content.wordCount || 0} words
 
-SEO问题: ${issueDescriptions}
-H1标题: "${h1Text}"
-主要关键词: ${topKeywords.slice(0, 5).join(', ')}
-页面字数: ${content.wordCount || 0} 字
+Requirements:
+1. Length 30-60 characters
+2. Include main keywords
+3. Be descriptive and attractive
+4. Address detected SEO issues
 
-要求：
-1. 长度30-60字符
-2. 包含主要关键词
-3. 具有描述性和吸引力
-4. 解决检测到的SEO问题
+Please respond in English.
 
-请用JSON格式回复：
+Please respond in JSON format:
 {
-  "suggestion": "建议的标题",
-  "reason": "生成说明，说明如何解决SEO问题",
-  "keywords": ["包含的关键词"]
+  "suggestion": "suggested title",
+  "reason": "explanation of how it addresses SEO issues",
+  "keywords": ["included keywords"]
 }`;
 
             const response = await session.prompt(prompt);
@@ -302,66 +303,68 @@ H1标题: "${h1Text}"
             if (aiResult && aiResult.suggestion) {
                 return {
                     suggestion: aiResult.suggestion,
-                    reason: aiResult.reason || '基于AI生成的标题建议',
+                    reason: aiResult.reason || 'AI-generated title suggestion',
                     keywords: aiResult.keywords || topKeywords.slice(0, 5),
-                    examples: [
-                        '基于页面主要内容创建描述性标题',
-                        '包含主要关键词，长度控制在30-60字符',
-                        '确保标题独特且吸引人'
+                    improvements: [
+                        'Create descriptive title based on main page content',
+                        'Include main keywords, control length to 30-60 characters',
+                        'Ensure title is unique and attractive'
                     ]
                 };
             }
         }
 
-        // 优化现有标题
+        // Optimize existing title
         const topKeywords = this.extractTopKeywords(content.keywordDensity || {});
         const h1Text = headings.h1?.[0] || '';
+        
+        const prompt = `Optimize the following webpage title based on SEO analysis results:
 
-        const prompt = `基于SEO检查结果优化以下网页标题：
+Detected Issues: ${issueDescriptions}
+Current Title: "${currentTitle}"
+Title Length: ${currentTitle.length} characters
+H1 Title: "${h1Text}"
+Main Keywords: ${topKeywords.slice(0, 5).join(', ')}
+Page Word Count: ${content.wordCount || 0} words
+Length Issue: ${hasLengthIssue ? 'Yes' : 'No'}
 
-检测到的问题: ${issueDescriptions}
-当前标题: "${currentTitle}"
-标题长度: ${currentTitle.length} 字符
-H1标题: "${h1Text}"
-主要关键词: ${topKeywords.slice(0, 5).join(', ')}
-页面字数: ${content.wordCount || 0} 字
-长度问题: ${hasLengthIssue ? '是' : '否'}
+Please provide optimization suggestions for the detected issues:
+1. Analyze specific problems with the current title
+2. Provide an optimized title that solves these problems (30-60 characters)
+3. Explain how to solve each detected issue
+4. Recommend keywords (maximum 5)
 
-请针对检测到的具体问题提供优化建议：
-1. 分析当前标题存在的具体问题
-2. 提供解决这些问题的优化标题（30-60字符）
-3. 说明如何解决每个检测到的问题
-4. 推荐关键词（最多5个）
+Please respond in English.
 
-请用JSON格式回复：
+Please respond in JSON format:
 {
-  "analysis": "针对检测问题的分析",
-  "optimizedTitle": "解决问题的优化标题",
-  "improvements": ["如何解决问题1", "如何解决问题2"],
-  "keywords": ["关键词1", "关键词2"]
+  "analysis": "analysis of detected issues",
+  "optimizedTitle": "optimized title that solves the problems",
+  "improvements": ["how to solve problem 1", "how to solve problem 2"],
+  "keywords": ["keyword1", "keyword2"]
 }`;
 
-        console.log('[AI Optimizer] 发送标题优化提示到Gemini Nano...');
+        console.log('[AI Optimizer] Sending title optimization prompt to Gemini Nano...');
         const response = await session.prompt(prompt);
-        console.log('[AI Optimizer] 收到标题优化响应:', response.substring(0, 200) + '...');
+        console.log('[AI Optimizer] Received title optimization response:', response.substring(0, 200) + '...');
         const aiResult = this.parseAIResponse(response);
 
         if (aiResult) {
             return {
                 current: currentTitle,
-                suggestion: aiResult.optimizedTitle || currentTitle,
-                reason: aiResult.analysis || '基于AI分析的优化建议',
+                suggestion: aiResult.optimizedTitle || aiResult.suggestion || 'Current title is already good',
+                reason: aiResult.analysis || 'AI analysis-based optimization suggestion',
                 improvements: aiResult.improvements || [],
                 keywords: aiResult.keywords || topKeywords.slice(0, 5),
                 length: {
                     current: currentTitle.length,
-                    optimal: '30-60字符',
+                    optimal: '30-60 characters',
                     status: currentTitle.length >= 30 && currentTitle.length <= 60 ? 'good' : 'needs-improvement'
                 }
             };
         }
 
-        throw new Error('AI未能生成有效的标题优化建议');
+        throw new Error('AI failed to generate valid title optimization suggestions');
     }
 
     async optimizeMetaDescription(analysis, session, metaIssues = []) {
@@ -369,35 +372,36 @@ H1标题: "${h1Text}"
         const content = analysis.content || {};
         const title = analysis.metaTags?.title || '';
 
-        // 分析具体的Meta描述问题
-        const issueDescriptions = metaIssues.map(issue => issue.description || issue.title).join('；');
-        const hasLengthIssue = metaIssues.some(issue => issue.id === 'description-length' || issue.title.includes('长度'));
-        const isMissing = metaIssues.some(issue => issue.id === 'missing-description' || issue.title.includes('缺少'));
+        const issueDescriptions = metaIssues.map(issue => issue.description || issue.title).join('; ');
+        const hasLengthIssue = metaIssues.some(issue => issue.id === 'description-length' || issue.title.includes('Length'));
+        const isMissing = metaIssues.some(issue => issue.id === 'missing-description' || issue.title.includes('Missing'));
 
         if (!currentDescription || isMissing) {
             const topKeywords = this.extractTopKeywords(content.keywordDensity || {});
             const h1Text = analysis.headings?.h1?.[0] || '';
+            
+            const prompt = `Generate an SEO-optimized Meta description for the following webpage:
 
-            const prompt = `为以下网页生成SEO优化的Meta描述：
+SEO Issues: ${issueDescriptions}
+Page Title: "${title}"
+H1 Title: "${h1Text}"
+Main Keywords: ${topKeywords.slice(0, 5).join(', ')}
+Page Word Count: ${content.wordCount || 0} words
 
-SEO问题: ${issueDescriptions}
-页面标题: "${title}"
-H1标题: "${h1Text}"
-主要关键词: ${topKeywords.slice(0, 5).join(', ')}
-页面字数: ${content.wordCount || 0} 字
+Requirements:
+1. Length 120-160 characters
+2. Include main keywords
+3. Accurately describe page content
+4. Encourage user clicks
+5. Address detected SEO issues
 
-要求：
-1. 长度120-160字符
-2. 包含主要关键词
-3. 准确描述页面内容
-4. 吸引用户点击
-5. 解决检测到的SEO问题
+Please respond in English.
 
-请用JSON格式回复：
+Please respond in JSON format:
 {
-  "description": "优化的Meta描述",
-  "analysis": "生成说明，说明如何解决SEO问题",
-  "keywords": ["包含的关键词"]
+  "description": "optimized Meta description",
+  "analysis": "explanation of how it addresses SEO issues",
+  "keywords": ["included keywords"]
 }`;
 
             const response = await session.prompt(prompt);
@@ -406,39 +410,41 @@ H1标题: "${h1Text}"
             if (aiResult && aiResult.description) {
                 return {
                     suggestion: aiResult.description,
-                    reason: aiResult.analysis || '基于AI生成的Meta描述',
+                    reason: aiResult.analysis || 'AI-generated Meta description',
                     guidelines: [
-                        '长度控制在120-160字符',
-                        '包含主要关键词',
-                        '提供页面内容的准确摘要',
-                        '使用吸引人的语言鼓励点击'
+                        'Control length to 120-160 characters',
+                        'Include main keywords',
+                        'Provide accurate page content summary',
+                        'Use attractive language to encourage clicks'
                     ]
                 };
             }
         }
 
-        // 优化现有描述
+        // Optimize existing description
         const topKeywords = this.extractTopKeywords(content.keywordDensity || {});
+        
+        const prompt = `Optimize the following webpage's Meta description based on SEO analysis results:
 
-        const prompt = `基于SEO检查结果优化以下网页的Meta描述：
+Detected Issues: ${issueDescriptions}
+Current Description: "${currentDescription}"
+Description Length: ${currentDescription.length} characters
+Page Title: "${title}"
+Main Keywords: ${topKeywords.slice(0, 5).join(', ')}
+Length Issue: ${hasLengthIssue ? 'Yes' : 'No'}
 
-检测到的问题: ${issueDescriptions}
-当前描述: "${currentDescription}"
-描述长度: ${currentDescription.length} 字符
-页面标题: "${title}"
-主要关键词: ${topKeywords.slice(0, 5).join(', ')}
-长度问题: ${hasLengthIssue ? '是' : '否'}
+Please provide optimization suggestions for the detected issues:
+1. Analyze specific problems with the current description
+2. Provide an optimized description that solves these problems (120-160 characters)
+3. Explain how to solve each detected issue
 
-请针对检测到的具体问题提供优化建议：
-1. 分析当前描述存在的具体问题
-2. 提供解决这些问题的优化描述（120-160字符）
-3. 说明如何解决每个检测到的问题
+Please respond in English.
 
-请用JSON格式回复：
+Please respond in JSON format:
 {
-  "analysis": "针对检测问题的分析",
-  "optimizedDescription": "解决问题的优化描述",
-  "improvements": ["如何解决问题1", "如何解决问题2"]
+  "analysis": "analysis of detected issues",
+  "optimizedDescription": "optimized description that solves the problems",
+  "improvements": ["how to solve problem 1", "how to solve problem 2"]
 }`;
 
         const response = await session.prompt(prompt);
@@ -447,19 +453,19 @@ H1标题: "${h1Text}"
         if (aiResult) {
             return {
                 current: currentDescription,
-                suggestion: aiResult.optimizedDescription || currentDescription,
-                reason: aiResult.analysis || '基于AI分析的优化建议',
+                suggestion: aiResult.optimizedDescription || aiResult.description || 'Current description is already good',
+                reason: aiResult.analysis || 'AI analysis-based optimization suggestion',
                 improvements: aiResult.improvements || [],
                 keywords: topKeywords.slice(0, 5),
                 length: {
                     current: currentDescription.length,
-                    optimal: '120-160字符',
+                    optimal: '120-160 characters',
                     status: currentDescription.length >= 120 && currentDescription.length <= 160 ? 'good' : 'needs-improvement'
                 }
             };
         }
 
-        throw new Error('AI未能生成有效的Meta描述优化建议');
+        throw new Error('AI failed to generate valid Meta description optimization suggestions');
     }
 
     async generateContentImprovements(analysis, session, contentIssues = []) {
@@ -467,34 +473,35 @@ H1标题: "${h1Text}"
         const headings = analysis.headings || {};
         const topKeywords = this.extractTopKeywords(content.keywordDensity || {});
 
-        // 分析具体的内容问题
-        const issueDescriptions = contentIssues.map(issue => `${issue.title}: ${issue.description || ''}`).join('；');
+        const issueDescriptions = contentIssues.map(issue => `${issue.title}: ${issue.description || ''}`).join('; ');
+        
+        const prompt = `Provide content improvement suggestions based on SEO analysis results:
 
-        const prompt = `基于SEO检查结果提供内容改进建议：
+Detected Issues: ${issueDescriptions}
 
-检测到的问题: ${issueDescriptions}
+Content Statistics:
+- Word Count: ${content.wordCount || 0}
+- Readability Score: ${content.readabilityScore || 0}/100
+- H1 Count: ${headings.h1?.length || 0}
+- H2 Count: ${headings.h2?.length || 0}
+- Main Keywords: ${topKeywords.slice(0, 5).join(', ')}
 
-内容统计:
-- 字数: ${content.wordCount || 0}
-- 可读性评分: ${content.readabilityScore || 0}/100
-- H1标题数量: ${headings.h1?.length || 0}
-- H2标题数量: ${headings.h2?.length || 0}
-- 主要关键词: ${topKeywords.slice(0, 5).join(', ')}
+Please provide improvement suggestions for the detected issues:
+1. Analyze each detected issue
+2. Provide solutions and specific steps
+3. Prioritize suggestions
 
-请针对检测到的具体问题提供改进建议：
-1. 分析每个检测到的问题
-2. 提供解决方案和具体步骤
-3. 按优先级排序建议
+Please respond in English.
 
-请用JSON格式回复：
+Please respond in JSON format:
 {
   "improvements": [
     {
-      "type": "检测到的问题类型",
+      "type": "detected issue type",
       "priority": "critical/high/medium/low",
-      "title": "针对具体问题的改进标题",
-      "description": "如何解决检测到的问题",
-      "suggestions": ["具体解决步骤1", "具体解决步骤2"]
+      "title": "improvement title for specific issue",
+      "description": "how to solve the detected issue",
+      "suggestions": ["specific solution step 1", "specific solution step 2"]
     }
   ]
 }`;
@@ -506,7 +513,7 @@ H1标题: "${h1Text}"
             return aiResult.improvements;
         }
 
-        throw new Error('AI未能生成有效的内容改进建议');
+        throw new Error('AI failed to generate valid content improvement suggestions');
     }
 
     async generateKeywordSuggestions(analysis, session, keywordIssues = []) {
@@ -516,31 +523,32 @@ H1标题: "${h1Text}"
         const existingKeywords = this.extractTopKeywords(content.keywordDensity || {});
         const h1Text = headings.h1?.[0] || '';
 
-        // 分析关键词相关问题
         const issueDescriptions = keywordIssues.length > 0
-            ? keywordIssues.map(issue => `${issue.title}: ${issue.description || ''}`).join('；')
-            : '基于其他SEO问题提供关键词优化建议';
+            ? keywordIssues.map(issue => `${issue.title}: ${issue.description || ''}`).join('; ')
+            : 'Provide keyword optimization suggestions based on other SEO issues';
+        
+        const prompt = `Provide keyword optimization suggestions based on SEO analysis results:
 
-        const prompt = `基于SEO检查结果提供关键词优化建议：
+Related Issues: ${issueDescriptions}
+Page Title: "${title}"
+H1 Title: "${h1Text}"
+Current Keywords: ${existingKeywords.slice(0, 5).join(', ')}
+Content Word Count: ${content.wordCount || 0}
 
-相关问题: ${issueDescriptions}
-页面标题: "${title}"
-H1标题: "${h1Text}"
-当前关键词: ${existingKeywords.slice(0, 5).join(', ')}
-内容字数: ${content.wordCount || 0}
+Please provide four types of keyword suggestions to improve SEO performance:
+1. Primary keywords (3-5, based on content analysis and SEO issues)
+2. Secondary keywords (3-5, extracted and optimized from titles)
+3. Long-tail keywords (5-8, including question-based and how-to types, addressing user search intent)
+4. Semantic keywords (5-8, related concept words, improving content relevance)
 
-请提供四类关键词建议来改善SEO表现：
-1. 主要关键词（3-5个，基于内容分析和SEO问题）
-2. 次要关键词（3-5个，从标题提取和优化）
-3. 长尾关键词（5-8个，包含疑问式、方法类，解决用户搜索意图）
-4. 语义相关词（5-8个，相关概念词汇，提升内容相关性）
+Please respond in English.
 
-请用JSON格式回复：
+Please respond in JSON format:
 {
-  "primary": [{"keyword": "关键词", "suggestion": "如何使用来解决SEO问题"}],
-  "secondary": [{"keyword": "关键词", "suggestion": "使用建议"}],
-  "longTail": [{"keyword": "长尾关键词", "suggestion": "使用建议"}],
-  "semantic": [{"keyword": "相关词", "suggestion": "使用建议"}]
+  "primary": ["keyword1", "keyword2"],
+  "secondary": ["keyword1", "keyword2"],
+  "longTail": ["long-tail keyword1", "long-tail keyword2"],
+  "semantic": ["related word1", "related word2"]
 }`;
 
         const response = await session.prompt(prompt);
@@ -555,7 +563,7 @@ H1标题: "${h1Text}"
             };
         }
 
-        throw new Error('AI未能生成有效的关键词建议');
+        throw new Error('AI failed to generate valid keyword suggestions');
     }
 
     async generateStructureRecommendations(analysis, session, structureIssues = []) {
@@ -563,37 +571,38 @@ H1标题: "${h1Text}"
         const content = analysis.content || {};
         const images = analysis.images || {};
 
-        // 分析具体的结构问题
-        const issueDescriptions = structureIssues.map(issue => `${issue.title}: ${issue.description || ''}`).join('；');
+        const issueDescriptions = structureIssues.map(issue => `${issue.title}: ${issue.description || ''}`).join('; ');
+        
+        const prompt = `Provide structure optimization suggestions based on SEO analysis results:
 
-        const prompt = `基于SEO检查结果提供结构优化建议：
+Detected Issues: ${issueDescriptions}
 
-检测到的问题: ${issueDescriptions}
+Current Structure Status:
+- H1 Count: ${headings.h1?.length || 0}
+- H2 Count: ${headings.h2?.length || 0}
+- H3 Count: ${headings.h3?.length || 0}
+- Total Word Count: ${content.wordCount || 0}
+- Image Count: ${images.totalImages || 0}
+- Images Without Alt: ${images.imagesWithoutAlt || 0}
+- Internal Links: ${analysis.links?.internalLinks || 0}
 
-当前结构状况:
-- H1数量: ${headings.h1?.length || 0}
-- H2数量: ${headings.h2?.length || 0}
-- H3数量: ${headings.h3?.length || 0}
-- 总字数: ${content.wordCount || 0}
-- 图片数量: ${images.totalImages || 0}
-- 缺少Alt属性的图片: ${images.imagesWithoutAlt || 0}
-- 内部链接: ${analysis.links?.internalLinks || 0}
+Please provide structure optimization suggestions for the detected issues:
+1. Analyze each detected structure issue
+2. Provide specific solutions
+3. Give detailed implementation steps
+4. Prioritize by importance
 
-请针对检测到的具体问题提供结构优化建议：
-1. 分析每个检测到的结构问题
-2. 提供具体的解决方案
-3. 给出详细的实施步骤
-4. 按优先级排序
+Please respond in English.
 
-请用JSON格式回复：
+Please respond in JSON format:
 {
   "recommendations": [
     {
-      "type": "检测到的问题类型",
+      "type": "detected issue type",
       "priority": "critical/high/medium/low",
-      "title": "针对具体问题的解决方案",
-      "description": "如何解决检测到的结构问题",
-      "implementation": ["具体实施步骤1", "具体实施步骤2"]
+      "title": "solution for specific issue",
+      "description": "how to solve the detected structure issue",
+      "steps": ["specific implementation step 1", "specific implementation step 2"]
     }
   ]
 }`;
@@ -605,28 +614,28 @@ H1标题: "${h1Text}"
             return aiResult.recommendations;
         }
 
-        throw new Error('AI未能生成有效的结构优化建议');
+        throw new Error('AI failed to generate valid structure optimization suggestions');
     }
 
-    // 辅助方法
+    // Helper methods
     parseAIResponse(response) {
         try {
-            // 尝试解析JSON响应
+            // Try to parse JSON response
             const jsonMatch = response.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
                 return JSON.parse(jsonMatch[0]);
             }
 
-            // 如果不是JSON格式，尝试解析结构化文本
+            // If not JSON format, try to parse structured text
             const lines = response.split('\n').filter(line => line.trim());
             const result = {};
 
             for (const line of lines) {
-                if (line.includes('优化后的标题') || line.includes('建议标题')) {
+                if (line.includes('optimized title') || line.includes('suggested title')) {
                     const titleMatch = line.match(/[:：]\s*[""]?([^"""]+)[""]?/);
                     if (titleMatch) result.optimizedTitle = titleMatch[1].trim();
                 }
-                if (line.includes('分析') || line.includes('问题')) {
+                if (line.includes('analysis') || line.includes('issue')) {
                     const analysisMatch = line.match(/[:：]\s*(.+)/);
                     if (analysisMatch) result.analysis = analysisMatch[1].trim();
                 }
@@ -647,7 +656,7 @@ H1标题: "${h1Text}"
     }
 }
 
-// 导出AI内容优化器
+// Export AI content optimizer
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = AIContentOptimizer;
 } else if (typeof window !== 'undefined') {

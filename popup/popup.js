@@ -1,4 +1,4 @@
-// SEO Checker Popup Script
+// SEO Checker Popup Script - English Only Version
 
 // Simple UI controller
 class SimplePopupUI {
@@ -49,8 +49,7 @@ class SimplePopupUI {
       refreshBtn: document.getElementById('refresh-btn'),
       retryBtn: document.getElementById('retry-btn'),
       generateSuggestionsBtn: document.getElementById('generate-suggestions'),
-      detailedReportBtn: document.getElementById('detailed-report-btn'),
-
+      detailedReportBtn: document.getElementById('detailed-report-btn')
     };
   }
 
@@ -91,7 +90,6 @@ class SimplePopupUI {
         this.openDetailedReport();
       });
     }
-
   }
 
   initializeMessageListener() {
@@ -99,13 +97,10 @@ class SimplePopupUI {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.type === 'AI_PROGRESS_UPDATE') {
         const progress = message.progress;
-        
-        // Update the UI with progress information
         if (progress) {
           this.updateSuggestionsStatus(progress.message, 'loading');
-          console.log('[Popup] 收到AI进度更新:', progress);
+          console.log('[Popup] Received AI progress update:', progress);
         }
-        
         sendResponse({ received: true });
       }
     });
@@ -122,19 +117,19 @@ class SimplePopupUI {
       try {
         await chrome.runtime.sendMessage({ action: 'ping' });
       } catch (pingError) {
-        throw new Error('后台脚本无响应，请重新加载扩展');
+        throw new Error('Background script is not responding, please reload the extension');
       }
 
       // Get current tab
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
       if (!tab.id) {
-        throw new Error('无法获取当前标签页');
+        throw new Error('Cannot get current tab');
       }
 
       // Check if the current page is a valid web page
       if (!tab.url || (!tab.url.startsWith('http://') && !tab.url.startsWith('https://'))) {
-        throw new Error('当前页面不是有效的网页，SEO分析仅支持HTTP/HTTPS页面');
+        throw new Error('Current page is not a valid webpage, SEO analysis only supports HTTP/HTTPS pages');
       }
 
       // Request analysis from background script
@@ -145,11 +140,11 @@ class SimplePopupUI {
           tabId: tab.id
         });
       } catch (messageError) {
-        throw new Error('无法与后台脚本通信，请重新加载扩展');
+        throw new Error('Cannot communicate with background script, please reload the extension');
       }
 
       if (!response) {
-        throw new Error('后台脚本无响应，请重新加载扩展');
+        throw new Error('Background script is not responding, please reload the extension');
       }
 
       if (response.error) {
@@ -167,27 +162,27 @@ class SimplePopupUI {
         this.displayIssues(response.report.issues);
 
         if (response.report.suggestions) {
-          this.displaySuggestions(response.report.suggestions);
+          this.displaySuggestions = response.report.suggestions;
         }
       } else {
         // No cached analysis, trigger new analysis
         this.triggerNewAnalysis(tab.id);
       }
     } catch (error) {
-      this.showError(error instanceof Error ? error.message : '加载分析结果失败');
+      this.showError(error instanceof Error ? error.message : 'Failed to load analysis results');
     }
   }
 
   async triggerNewAnalysis(tabId) {
     try {
-      // 显示初始进度
-      this.updateProgress({ step: 1, message: '正在启动SEO分析...', progress: 5 });
+      // Show initial progress
+      this.updateProgress({ step: 1, message: 'Starting SEO analysis...', progress: 5 });
 
-      // 测试content脚本是否可用
+      // Test content script availability
       try {
         await chrome.tabs.sendMessage(tabId, { type: 'PING' });
       } catch (contentError) {
-        throw new Error('页面内容脚本未加载，请刷新页面后重试');
+        throw new Error('Page content script not loaded, please refresh the page and try again');
       }
 
       const response = await chrome.runtime.sendMessage({
@@ -202,25 +197,18 @@ class SimplePopupUI {
       // Analysis started, wait for completion
       this.waitForAnalysisCompletion(tabId);
     } catch (error) {
-      this.showError(error instanceof Error ? error.message : '启动分析失败');
+      this.showError(error instanceof Error ? error.message : 'Failed to start analysis');
     }
   }
 
   waitForAnalysisCompletion(tabId) {
-    const steps = [
-      { step: 1, message: '正在连接到页面...', progress: 10 },
-      { step: 2, message: '正在分析页面元数据...', progress: 25 },
-      { step: 3, message: '正在分析标题结构...', progress: 45 },
-      { step: 4, message: '正在分析页面内容...', progress: 65 },
-      { step: 5, message: '正在分析图片和性能...', progress: 85 },
-      { step: 6, message: '正在生成分析报告...', progress: 95 }
-    ];
+    const steps = this.getProgressSteps();
 
     let currentStepIndex = 0;
     let checkCount = 0;
-    const maxChecks = 15; // 最多检查15次 (30秒)
+    const maxChecks = 15; // Maximum 15 checks (30 seconds)
 
-    // 开始显示进度
+    // Start showing progress
     this.updateProgress(steps[0]);
 
     const checkInterval = setInterval(async () => {
@@ -235,10 +223,10 @@ class SimplePopupUI {
         if (response.completed && response.report) {
           clearInterval(checkInterval);
 
-          // 显示完成状态
-          this.updateProgress({ step: 6, message: '分析完成！', progress: 100 });
+          // Show completion status
+          this.updateProgress({ step: 6, message: 'Analysis complete!', progress: 100 });
 
-          // 短暂延迟后显示结果
+          // Show results after brief delay
           setTimeout(() => {
             this.displaySEOScore(response.report.score);
             this.showQuickReport({
@@ -253,7 +241,7 @@ class SimplePopupUI {
           clearInterval(checkInterval);
           this.showError(response.error);
         } else if (checkCount >= maxChecks) {
-          // 检查次数达到上限，尝试获取缓存的报告
+          // Reached maximum checks, try to get cached report
           clearInterval(checkInterval);
 
           try {
@@ -263,7 +251,7 @@ class SimplePopupUI {
             });
 
             if (cachedResponse.report) {
-              this.updateProgress({ step: 6, message: '分析完成！', progress: 100 });
+              this.updateProgress({ step: 6, message: 'Analysis complete!', progress: 100 });
               setTimeout(() => {
                 this.displaySEOScore(cachedResponse.report.score);
                 this.showQuickReport({
@@ -275,13 +263,13 @@ class SimplePopupUI {
                 this.displayIssues(cachedResponse.report.issues);
               }, 500);
             } else {
-              this.showError('分析时间较长，请稍后刷新查看结果');
+              this.showError('Analysis is taking longer, please refresh later to view results');
             }
           } catch (error) {
-            this.showError('分析时间较长，请稍后刷新查看结果');
+            this.showError('Analysis is taking longer, please refresh later to view results');
           }
         } else {
-          // 更新进度显示
+          // Update progress display
           if (response.running) {
             if (response.progress) {
               this.updateProgress(response.progress);
@@ -296,9 +284,20 @@ class SimplePopupUI {
         }
       } catch (error) {
         clearInterval(checkInterval);
-        this.showError('检查分析状态失败: ' + error.message);
+        this.showError('Failed to check analysis status: ' + error.message);
       }
     }, 2000);
+  }
+
+  getProgressSteps() {
+    return [
+      { step: 1, message: 'Connecting to page...', progress: 10 },
+      { step: 2, message: 'Analyzing page metadata...', progress: 25 },
+      { step: 3, message: 'Analyzing title structure...', progress: 45 },
+      { step: 4, message: 'Analyzing page content...', progress: 65 },
+      { step: 5, message: 'Analyzing images and performance...', progress: 85 },
+      { step: 6, message: 'Generating analysis report...', progress: 95 }
+    ];
   }
 
   updateProgress(stepInfo) {
@@ -315,9 +314,8 @@ class SimplePopupUI {
     }
 
     if (this.elements.stepCounter) {
-      this.elements.stepCounter.textContent = `第 ${stepInfo.step} 步，共 6 步`;
+      this.elements.stepCounter.textContent = `Step ${stepInfo.step} of 6`;
     }
-
   }
 
   displaySEOScore(score) {
@@ -375,13 +373,13 @@ class SimplePopupUI {
 
   displayIssues(issues) {
     this.currentIssues = issues;
-    // 为每个问题添加原始索引
+    // Add original index to each issue
     this.currentIssues.forEach((issue, index) => {
       issue.originalIndex = index;
     });
     this.filterIssues(this.currentFilter);
 
-    // 自动在页面上高亮显示问题
+    // Automatically highlight issues on page
     this.highlightIssuesOnPage(issues);
   }
 
@@ -395,7 +393,7 @@ class SimplePopupUI {
         });
       }
     } catch (error) {
-      // 静默失败，不影响主功能
+      // Silent failure, doesn't affect main functionality
     }
   }
 
@@ -433,23 +431,21 @@ class SimplePopupUI {
       const issueElement = document.createElement('div');
       issueElement.className = 'issue-item';
 
-      // 使用预先设置的原始索引
+      // Use pre-set original index
       const originalIndex = issue.originalIndex !== undefined ? issue.originalIndex : displayIndex;
 
-      // 构建详细的问题信息
-      const locationInfo = issue.location ? `<span class="issue-location">位置: ${issue.location}</span>` : '';
-      const currentValueInfo = issue.currentValue ? `<div class="issue-current">当前: ${issue.currentValue}</div>` : '';
-      const expectedValueInfo = issue.expectedValue ? `<div class="issue-expected">建议: ${issue.expectedValue}</div>` : '';
-      const impactInfo = issue.impact ? `<div class="issue-impact">影响: ${issue.impact}</div>` : '';
-
-
+      // Build detailed issue information
+      const locationInfo = issue.location ? `<span class="issue-location">Location: ${issue.location}</span>` : '';
+      const currentValueInfo = issue.currentValue ? `<div class="issue-current">Current: ${issue.currentValue}</div>` : '';
+      const expectedValueInfo = issue.expectedValue ? `<div class="issue-expected">Suggested: ${issue.expectedValue}</div>` : '';
+      const impactInfo = issue.impact ? `<div class="issue-impact">Impact: ${issue.impact}</div>` : '';
 
       issueElement.innerHTML = `
         <div class="issue-header">
           <span class="severity-badge ${issue.severity}">${this.getSeverityText(issue.severity)}</span>
           <span class="issue-title">${issue.title}</span>
           <div class="issue-actions">
-            <button class="locate-btn" title="在页面上定位" data-issue-id="${issue.id}" data-original-index="${originalIndex}">🎯</button>
+            <button class="locate-btn" title="Locate on page" data-issue-id="${issue.id}" data-original-index="${originalIndex}">🎯</button>
             <span class="issue-expand">▼</span>
           </div>
         </div>
@@ -462,13 +458,13 @@ class SimplePopupUI {
           ${expectedValueInfo}
           ${impactInfo}
           <div class="issue-recommendation">
-            <strong>解决方案:</strong>
+            <strong>Solution:</strong>
             <div class="recommendation-content">${issue.recommendation}</div>
           </div>
         </div>
       `;
 
-      // 添加展开/收起功能
+      // Add expand/collapse functionality
       const header = issueElement.querySelector('.issue-header');
       const details = issueElement.querySelector('.issue-details');
       const expandIcon = issueElement.querySelector('.issue-expand');
@@ -486,9 +482,7 @@ class SimplePopupUI {
         }
       });
 
-
-
-      // 添加定位功能
+      // Add locate functionality
       const locateBtn = issueElement.querySelector('.locate-btn');
       if (locateBtn) {
         locateBtn.addEventListener('click', async (e) => {
@@ -523,7 +517,7 @@ class SimplePopupUI {
 
     // Clear existing suggestions
     this.elements.suggestionsList.innerHTML = '';
-    
+
     // Hide no-suggestions message
     if (this.elements.noSuggestions) {
       this.elements.noSuggestions.style.display = 'none';
@@ -558,36 +552,39 @@ class SimplePopupUI {
 
     const section = document.createElement('div');
     section.className = 'suggestion-section';
-    
-    const hasImprovement = titleOpt.suggestion && titleOpt.suggestion !== '当前标题已经很好';
-    
+
+    const goodTitleText = 'Current title is already good';
+    const hasImprovement = titleOpt.suggestion && titleOpt.suggestion !== goodTitleText;
+
     section.innerHTML = `
       <div class="suggestion-header">
-        <h4>📝 标题优化建议</h4>
+        <h4>📝 Title Optimization</h4>
         <span class="suggestion-status ${titleOpt.length?.status || 'unknown'}">${this.getStatusText(titleOpt.length?.status)}</span>
       </div>
       <div class="suggestion-content">
         ${titleOpt.current ? `
         <div class="current-content">
-          <strong>当前标题:</strong>
+          <strong>Current Title:</strong>
           <div class="content-box">${titleOpt.current}</div>
-          <small>长度: ${titleOpt.length?.current || titleOpt.current.length} 字符</small>
+          <small>Length: ${titleOpt.length?.current || titleOpt.current.length} characters</small>
         </div>` : ''}
         
         ${hasImprovement ? `
         <div class="suggested-content">
-          <strong>优化建议:</strong>
+          <strong>Optimization Suggestion:</strong>
           <div class="content-box suggested">${titleOpt.suggestion}</div>
-          <button class="copy-btn" onclick="navigator.clipboard.writeText('${titleOpt.suggestion.replace(/'/g, "\\'")}')">复制</button>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('${titleOpt.suggestion.replace(/'/g, "\\'")}')">
+            Copy
+          </button>
         </div>` : ''}
         
         <div class="suggestion-reason">
-          <strong>分析:</strong> ${titleOpt.reason}
+          <strong>Analysis:</strong> ${titleOpt.reason}
         </div>
         
         ${titleOpt.improvements && titleOpt.improvements.length > 0 ? `
         <div class="improvement-tips">
-          <strong>改进要点:</strong>
+          <strong>Improvement Points:</strong>
           <ul>
             ${titleOpt.improvements.map(tip => `<li>${tip}</li>`).join('')}
           </ul>
@@ -595,7 +592,7 @@ class SimplePopupUI {
         
         ${titleOpt.keywords && titleOpt.keywords.length > 0 ? `
         <div class="keyword-suggestions">
-          <strong>推荐关键词:</strong>
+          <strong>Recommended Keywords:</strong>
           <div class="keyword-tags">
             ${titleOpt.keywords.map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
           </div>
@@ -611,43 +608,48 @@ class SimplePopupUI {
 
     const section = document.createElement('div');
     section.className = 'suggestion-section';
-    
-    const hasImprovement = metaOpt.suggestion && metaOpt.suggestion !== '当前描述已经很好';
-    
+
+    const goodDescriptionText = 'Current description is already good';
+    const hasImprovement = metaOpt.suggestion && metaOpt.suggestion !== goodDescriptionText;
+
     section.innerHTML = `
       <div class="suggestion-header">
-        <h4>📄 Meta描述优化</h4>
+        <h4>📄 Meta Description Optimization</h4>
         <span class="suggestion-status ${metaOpt.length?.status || 'unknown'}">${this.getStatusText(metaOpt.length?.status)}</span>
       </div>
       <div class="suggestion-content">
         ${metaOpt.current ? `
         <div class="current-content">
-          <strong>当前描述:</strong>
+          <strong>Current Description:</strong>
           <div class="content-box">${metaOpt.current}</div>
-          <small>长度: ${metaOpt.length?.current || metaOpt.current.length} 字符</small>
+          <small>Length: ${metaOpt.length?.current || metaOpt.current.length} characters</small>
         </div>` : ''}
         
         ${hasImprovement ? `
         <div class="suggested-content">
-          <strong>优化建议:</strong>
+          <strong>Optimization Suggestion:</strong>
           <div class="content-box suggested">${metaOpt.suggestion}</div>
-          <button class="copy-btn" onclick="navigator.clipboard.writeText('${metaOpt.suggestion.replace(/'/g, "\\'")}')">复制</button>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('${metaOpt.suggestion.replace(/'/g, "\\'")}')">
+            Copy
+          </button>
         </div>` : ''}
         
         ${metaOpt.template ? `
         <div class="suggested-content">
-          <strong>建议模板:</strong>
+          <strong>Suggested Template:</strong>
           <div class="content-box suggested">${metaOpt.template}</div>
-          <button class="copy-btn" onclick="navigator.clipboard.writeText('${metaOpt.template.replace(/'/g, "\\'")}')">复制</button>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('${metaOpt.template.replace(/'/g, "\\'")}')">
+            Copy
+          </button>
         </div>` : ''}
         
         <div class="suggestion-reason">
-          <strong>分析:</strong> ${metaOpt.reason}
+          <strong>Analysis:</strong> ${metaOpt.reason}
         </div>
         
         ${metaOpt.guidelines && metaOpt.guidelines.length > 0 ? `
         <div class="improvement-tips">
-          <strong>编写指南:</strong>
+          <strong>Writing Guidelines:</strong>
           <ul>
             ${metaOpt.guidelines.map(tip => `<li>${tip}</li>`).join('')}
           </ul>
@@ -663,11 +665,11 @@ class SimplePopupUI {
 
     const section = document.createElement('div');
     section.className = 'suggestion-section';
-    
+
     section.innerHTML = `
       <div class="suggestion-header">
-        <h4>✨ 内容改进建议</h4>
-        <span class="suggestion-count">${improvements.length} 项建议</span>
+        <h4>✨ Content Improvements</h4>
+        <span class="suggestion-count">${improvements.length === 1 ? '1 suggestion' : `${improvements.length} suggestions`}</span>
       </div>
       <div class="suggestion-content">
         ${improvements.map(improvement => `
@@ -679,7 +681,7 @@ class SimplePopupUI {
             <div class="improvement-description">${improvement.description}</div>
             ${improvement.suggestions && improvement.suggestions.length > 0 ? `
             <div class="improvement-suggestions">
-              <strong>具体建议:</strong>
+              <strong>Specific Suggestions:</strong>
               <ul>
                 ${improvement.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
               </ul>
@@ -692,56 +694,46 @@ class SimplePopupUI {
     this.elements.suggestionsList.appendChild(section);
   }
 
-  createKeywordSuggestionsSection(keywords) {
-    if (!keywords || Object.keys(keywords).every(key => keywords[key].length === 0)) return;
+  createKeywordSuggestionsSection(keywordSuggestions) {
+    if (!keywordSuggestions || Object.keys(keywordSuggestions).every(key => keywordSuggestions[key].length === 0)) return;
 
     const section = document.createElement('div');
     section.className = 'suggestion-section';
-    
+
     section.innerHTML = `
       <div class="suggestion-header">
-        <h4>🔍 关键词建议</h4>
+        <h4>🔍 Keyword Suggestions</h4>
       </div>
       <div class="suggestion-content">
-        ${keywords.primary && keywords.primary.length > 0 ? `
-        <div class="keyword-category">
-          <strong>主要关键词:</strong>
-          <div class="keyword-list">
-            ${keywords.primary.map(kw => `
-              <div class="keyword-item">
-                <span class="keyword">${kw.keyword}</span>
-                <small>${kw.suggestion}</small>
-              </div>
-            `).join('')}
-          </div>
-        </div>` : ''}
-        
-        ${keywords.secondary && keywords.secondary.length > 0 ? `
-        <div class="keyword-category">
-          <strong>次要关键词:</strong>
-          <div class="keyword-list">
-            ${keywords.secondary.map(kw => `
-              <div class="keyword-item">
-                <span class="keyword">${kw.keyword}</span>
-                <small>${kw.suggestion}</small>
-              </div>
-            `).join('')}
-          </div>
-        </div>` : ''}
-        
-        ${keywords.longTail && keywords.longTail.length > 0 ? `
-        <div class="keyword-category">
-          <strong>长尾关键词:</strong>
+        ${keywordSuggestions.primary && keywordSuggestions.primary.length > 0 ? `
+        <div class="keyword-group">
+          <strong>Primary Keywords:</strong>
           <div class="keyword-tags">
-            ${keywords.longTail.map(kw => `<span class="keyword-tag" title="${kw.suggestion}">${kw.keyword}</span>`).join('')}
+            ${keywordSuggestions.primary.map(keyword => `<span class="keyword-tag primary">${keyword}</span>`).join('')}
           </div>
         </div>` : ''}
         
-        ${keywords.semantic && keywords.semantic.length > 0 ? `
-        <div class="keyword-category">
-          <strong>语义相关词:</strong>
+        ${keywordSuggestions.secondary && keywordSuggestions.secondary.length > 0 ? `
+        <div class="keyword-group">
+          <strong>Secondary Keywords:</strong>
           <div class="keyword-tags">
-            ${keywords.semantic.map(kw => `<span class="keyword-tag" title="${kw.suggestion}">${kw.keyword}</span>`).join('')}
+            ${keywordSuggestions.secondary.map(keyword => `<span class="keyword-tag secondary">${keyword}</span>`).join('')}
+          </div>
+        </div>` : ''}
+        
+        ${keywordSuggestions.longTail && keywordSuggestions.longTail.length > 0 ? `
+        <div class="keyword-group">
+          <strong>Long-tail Keywords:</strong>
+          <div class="keyword-tags">
+            ${keywordSuggestions.longTail.map(keyword => `<span class="keyword-tag long-tail">${keyword}</span>`).join('')}
+          </div>
+        </div>` : ''}
+        
+        ${keywordSuggestions.semantic && keywordSuggestions.semantic.length > 0 ? `
+        <div class="keyword-group">
+          <strong>Semantic Keywords:</strong>
+          <div class="keyword-tags">
+            ${keywordSuggestions.semantic.map(keyword => `<span class="keyword-tag semantic">${keyword}</span>`).join('')}
           </div>
         </div>` : ''}
       </div>
@@ -755,25 +747,24 @@ class SimplePopupUI {
 
     const section = document.createElement('div');
     section.className = 'suggestion-section';
-    
+
     section.innerHTML = `
       <div class="suggestion-header">
-        <h4>🏗️ 结构优化建议</h4>
-        <span class="suggestion-count">${recommendations.length} 项建议</span>
+        <h4>🏗️ Structure Recommendations</h4>
+        <span class="suggestion-count">${recommendations.length === 1 ? '1 suggestion' : `${recommendations.length} suggestions`}</span>
       </div>
       <div class="suggestion-content">
         ${recommendations.map(rec => `
-          <div class="recommendation-item ${rec.priority}">
+          <div class="structure-recommendation">
             <div class="recommendation-header">
-              <span class="priority-badge ${rec.priority}">${this.getPriorityText(rec.priority)}</span>
               <strong>${rec.title}</strong>
             </div>
             <div class="recommendation-description">${rec.description}</div>
-            ${rec.implementation && rec.implementation.length > 0 ? `
+            ${rec.steps && rec.steps.length > 0 ? `
             <div class="implementation-steps">
-              <strong>实施步骤:</strong>
+              <strong>Implementation Steps:</strong>
               <ol>
-                ${rec.implementation.map(step => `<li>${step}</li>`).join('')}
+                ${rec.steps.map(step => `<li>${step}</li>`).join('')}
               </ol>
             </div>` : ''}
           </div>
@@ -790,28 +781,22 @@ class SimplePopupUI {
     }
   }
 
-  updateSuggestionsStatus(message, type = 'info') {
-    if (this.elements.suggestionsStatus && this.elements.suggestionsStatusText) {
+  updateSuggestionsStatus(message, type) {
+    if (this.elements.suggestionsStatus) {
       this.elements.suggestionsStatus.classList.remove('hidden');
+      this.elements.suggestionsStatus.className = `suggestions-status ${type}`;
+    }
+    if (this.elements.suggestionsStatusText) {
       this.elements.suggestionsStatusText.textContent = message;
-      
-      // Update status icon based on type
-      const statusIcon = this.elements.suggestionsStatus.querySelector('.status-icon');
-      if (statusIcon) {
-        switch (type) {
-          case 'loading':
-            statusIcon.textContent = '⏳';
-            break;
-          case 'success':
-            statusIcon.textContent = '✅';
-            break;
-          case 'error':
-            statusIcon.textContent = '❌';
-            break;
-          default:
-            statusIcon.textContent = 'ℹ️';
+    }
+
+    // Hide status after delay for success/error
+    if (type === 'success' || type === 'error') {
+      setTimeout(() => {
+        if (this.elements.suggestionsStatus) {
+          this.elements.suggestionsStatus.classList.add('hidden');
         }
-      }
+      }, 3000);
     }
   }
 
@@ -823,30 +808,28 @@ class SimplePopupUI {
 
   getStatusText(status) {
     const statusMap = {
-      'good': '✅ 良好',
-      'needs-improvement': '⚠️ 需改进',
-      'unknown': '❓ 未知'
+      'good': '✅ Good',
+      'needs-improvement': '⚠️ Needs Improvement',
+      'unknown': '❓ Unknown'
     };
-    return statusMap[status] || '❓ 未知';
+    return statusMap[status] || '❓ Unknown';
   }
 
   createSummarySection(summary) {
     const section = document.createElement('div');
     section.className = 'suggestion-section summary-section';
-    
+
     section.innerHTML = `
       <div class="suggestion-header">
-        <h4>🎉 SEO状况良好</h4>
+        <h4>🎉 SEO Status Good</h4>
       </div>
       <div class="suggestion-content">
-        <div class="summary-message">
-          ${summary.message}
-        </div>
-        ${summary.suggestions && summary.suggestions.length > 0 ? `
-        <div class="summary-suggestions">
-          <strong>持续优化建议:</strong>
+        <div class="summary-message">${summary.message}</div>
+        ${summary.continuousOptimization && summary.continuousOptimization.length > 0 ? `
+        <div class="continuous-optimization">
+          <strong>Continuous Optimization Suggestions:</strong>
           <ul>
-            ${summary.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+            ${summary.continuousOptimization.map(tip => `<li>${tip}</li>`).join('')}
           </ul>
         </div>` : ''}
       </div>
@@ -857,10 +840,10 @@ class SimplePopupUI {
 
   getPriorityText(priority) {
     const priorityMap = {
-      'critical': '严重',
-      'high': '高',
-      'medium': '中',
-      'low': '低'
+      'critical': 'Critical',
+      'high': 'High',
+      'medium': 'Medium',
+      'low': 'Low'
     };
     return priorityMap[priority] || priority;
   }
@@ -870,12 +853,12 @@ class SimplePopupUI {
       console.log('[Popup] 开始生成AI建议');
       // Show loading state
       this.showSuggestionsLoading(true);
-      this.updateSuggestionsStatus('正在生成AI建议...', 'loading');
+      this.updateSuggestionsStatus('AI suggestions loading...', 'loading');
 
       // Get current tab
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab.id) {
-        throw new Error('无法获取当前标签页');
+        throw new Error('Cannot get current tab');
       }
       console.log('[Popup] 当前标签页ID:', tab.id);
 
@@ -897,7 +880,7 @@ class SimplePopupUI {
 
         // Display the suggestions
         this.displayAISuggestions(response.suggestions);
-        this.updateSuggestionsStatus('AI建议生成完成', 'success');
+        this.updateSuggestionsStatus('AI suggestions loaded', 'success');
         
         // Hide status after 2 seconds
         setTimeout(() => {
@@ -966,12 +949,11 @@ class SimplePopupUI {
 
   async openDetailedReport() {
     try {
-      // Get current tab URL
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       
-      chrome.runtime.sendMessage({ 
+      await chrome.runtime.sendMessage({
         action: 'openDetailedReport',
-        url: tab.url 
+        url: tab.url
       });
     } catch (error) {
       console.error('Failed to open detailed report:', error);
@@ -989,8 +971,6 @@ class SimplePopupUI {
     });
   }
 
-
-
   showLoading() {
     if (this.elements.loading) {
       this.elements.loading.classList.remove('hidden');
@@ -1003,7 +983,7 @@ class SimplePopupUI {
     }
 
     // 重置进度显示
-    this.updateProgress({ step: 0, message: '准备开始分析...', progress: 0 });
+    this.updateProgress({ step: 0, message: 'Start to analysis...', progress: 0 });
   }
 
   showError(message) {
@@ -1034,80 +1014,50 @@ class SimplePopupUI {
   }
 
   updateScoreColor(element, score) {
-    // 移除所有颜色类
-    element.classList.remove('warning', 'danger', 'excellent', 'good', 'average', 'poor');
-
-    // 根据分数添加对应的颜色类
+    element.classList.remove('excellent', 'good', 'warning', 'danger');
     if (score >= 80) {
       element.classList.add('excellent');
     } else if (score >= 60) {
       element.classList.add('good');
     } else if (score >= 40) {
-      element.classList.add('warning'); // 保持原有的warning类
+      element.classList.add('warning');
     } else {
-      element.classList.add('danger'); // 保持原有的danger类
+      element.classList.add('danger');
     }
   }
 
   updateProgressBarColor(element, score) {
-    // 移除所有颜色类
     element.classList.remove('excellent', 'good', 'average', 'poor');
-
-    // 根据分数设置颜色类
-    let colorClass;
     if (score >= 80) {
-      colorClass = 'excellent';
+      element.classList.add('excellent');
     } else if (score >= 60) {
-      colorClass = 'good';
+      element.classList.add('good');
     } else if (score >= 40) {
-      colorClass = 'average';
+      element.classList.add('average');
     } else {
-      colorClass = 'poor';
+      element.classList.add('poor');
     }
-
-    element.classList.add(colorClass);
-
-    // 设置内联样式作为备用
-    const colors = {
-      excellent: '#28a745',
-      good: '#007bff',
-      average: '#fd7e14',
-      poor: '#dc3545'
-    };
-
-    element.style.setProperty('background-color', colors[colorClass], 'important');
   }
 
   updateScoreNumberColor(element, score) {
-    // 移除所有颜色类
     element.classList.remove('excellent', 'good', 'average', 'poor');
-
-    // 根据分数添加对应的颜色类和样式
     if (score >= 80) {
       element.classList.add('excellent');
-      element.style.setProperty('color', '#28a745', 'important');
-      element.style.setProperty('font-weight', '700', 'important');
     } else if (score >= 60) {
       element.classList.add('good');
-      element.style.setProperty('color', '#007bff', 'important');
-      element.style.setProperty('font-weight', '600', 'important');
     } else if (score >= 40) {
       element.classList.add('average');
-      element.style.setProperty('color', '#fd7e14', 'important');
-      element.style.setProperty('font-weight', '600', 'important');
     } else {
       element.classList.add('poor');
-      element.style.setProperty('color', '#dc3545', 'important');
-      element.style.setProperty('font-weight', '700', 'important');
     }
   }
 
   getSeverityText(severity) {
     const severityMap = {
-      critical: '严重',
-      high: '高',
-      medium: '中',
-      low: '低'
+      'critical': 'Critical',
+      'high': 'High',
+      'medium': 'Medium',
+      'low': 'Low'
     };
     return severityMap[severity] || severity;
   }
@@ -1127,11 +1077,9 @@ class SimplePopupUI {
       // 静默失败
     }
   }
-
-
 }
 
-// Initialize popup when DOM is loaded
+// Initialize the popup when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   const popup = new SimplePopupUI();
   popup.initializeUI();

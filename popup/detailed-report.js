@@ -1,4 +1,4 @@
-// Detailed Report Script
+// Detailed Report Script - English Only Version
 
 class DetailedReportUI {
   constructor() {
@@ -76,12 +76,6 @@ class DetailedReportUI {
       });
     }
 
-    if (this.elements.printBtn) {
-      this.elements.printBtn.addEventListener('click', () => {
-        window.print();
-      });
-    }
-
     if (this.elements.exportBtn) {
       this.elements.exportBtn.addEventListener('click', () => {
         this.exportToPDF();
@@ -103,7 +97,7 @@ class DetailedReportUI {
       }
 
       if (!response.report) {
-        throw new Error('没有找到分析报告。请先在网页上运行SEO分析，然后再查看详细报告。');
+        throw new Error('No analysis report found. Please run SEO analysis on a webpage first, then view the detailed report.');
       }
 
       this.displayReport(response.report);
@@ -149,37 +143,39 @@ class DetailedReportUI {
       if (scoreCircle) {
         const scoreDeg = (score.overall / 100) * 360;
         scoreCircle.style.setProperty('--score-deg', `${scoreDeg}deg`);
-        
-        // Update color based on score
-        let color = '#28a745'; // green
-        if (score.overall < 40) color = '#dc3545'; // red
-        else if (score.overall < 60) color = '#fd7e14'; // orange
-        else if (score.overall < 80) color = '#007bff'; // blue
-        
-        scoreCircle.style.background = `conic-gradient(${color} 0deg ${scoreDeg}deg, #e9ecef ${scoreDeg}deg 360deg)`;
+        this.updateScoreColor(scoreCircle, score.overall);
       }
     }
 
     // Breakdown scores
     if (this.elements.technicalScore) {
       this.elements.technicalScore.textContent = score.technical;
+      this.updateScoreNumberColor(this.elements.technicalScore, score.technical);
     }
     if (this.elements.contentScore) {
       this.elements.contentScore.textContent = score.content;
+      this.updateScoreNumberColor(this.elements.contentScore, score.content);
     }
     if (this.elements.performanceScore) {
       this.elements.performanceScore.textContent = score.performance;
+      this.updateScoreNumberColor(this.elements.performanceScore, score.performance);
     }
 
     // Progress bars
     if (this.elements.technicalFill) {
-      this.elements.technicalFill.style.width = `${Math.max(score.technical, 2)}%`;
+      const width = Math.max(score.technical, 5);
+      this.elements.technicalFill.style.width = `${width}%`;
+      this.updateProgressBarColor(this.elements.technicalFill, score.technical);
     }
     if (this.elements.contentFill) {
-      this.elements.contentFill.style.width = `${Math.max(score.content, 2)}%`;
+      const width = Math.max(score.content, 5);
+      this.elements.contentFill.style.width = `${width}%`;
+      this.updateProgressBarColor(this.elements.contentFill, score.content);
     }
     if (this.elements.performanceFill) {
-      this.elements.performanceFill.style.width = `${Math.max(score.performance, 2)}%`;
+      const width = Math.max(score.performance, 5);
+      this.elements.performanceFill.style.width = `${width}%`;
+      this.updateProgressBarColor(this.elements.performanceFill, score.performance);
     }
   }
 
@@ -202,424 +198,377 @@ class DetailedReportUI {
     if (this.elements.issuesList) {
       this.elements.issuesList.innerHTML = '';
       
-      // Sort issues by severity
-      const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
-      const sortedIssues = issues.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
+      // Group issues by severity
+      const severityOrder = ['critical', 'high', 'medium', 'low'];
       
-      sortedIssues.forEach(issue => {
-        const issueCard = this.createIssueCard(issue);
-        this.elements.issuesList.appendChild(issueCard);
+      severityOrder.forEach(severity => {
+        const severityIssues = issues.filter(i => i.severity === severity);
+        if (severityIssues.length > 0) {
+          this.renderIssueGroup(severity, severityIssues);
+        }
       });
     }
   }
 
-  createIssueCard(issue) {
-    const card = document.createElement('div');
-    card.className = `issue-card ${issue.severity}`;
+  renderIssueGroup(severity, issues) {
+    const groupElement = document.createElement('div');
+    groupElement.className = `issue-group ${severity}`;
     
-    const severityText = {
-      critical: '严重',
-      high: '高优先级',
-      medium: '中等',
-      low: '低优先级'
+    const severityNames = {
+      critical: 'Critical Issues',
+      high: 'High Priority Issues',
+      medium: 'Medium Issues',
+      low: 'Low Priority Issues'
     };
 
-    card.innerHTML = `
-      <div class="issue-header">
-        <div class="issue-title">${issue.title}</div>
-        <div class="issue-severity ${issue.severity}">${severityText[issue.severity]}</div>
-      </div>
-      <div class="issue-description">${issue.description}</div>
-      ${this.createIssueDetails(issue)}
-      <div class="issue-recommendation">
-        <h4>解决方案</h4>
-        <p>${issue.recommendation}</p>
+    groupElement.innerHTML = `
+      <h4 class="issue-group-title">${severityNames[severity]} (${issues.length})</h4>
+      <div class="issue-group-content">
+        ${issues.map(issue => this.renderIssueItem(issue)).join('')}
       </div>
     `;
+
+    this.elements.issuesList.appendChild(groupElement);
+  }
+
+  renderIssueItem(issue) {
+    return `
+      <div class="issue-item ${issue.severity}">
+        <div class="issue-header">
+          <span class="severity-badge ${issue.severity}">${this.getSeverityText(issue.severity)}</span>
+          <h5 class="issue-title">${issue.title}</h5>
+        </div>
+        <div class="issue-content">
+          <div class="issue-description">${issue.description}</div>
+          
+          ${issue.currentValue ? `
+          <div class="issue-detail">
+            <strong>Current Status:</strong> ${issue.currentValue}
+          </div>` : ''}
+          
+          ${issue.expectedValue ? `
+          <div class="issue-detail">
+            <strong>Suggested Value:</strong> ${issue.expectedValue}
+          </div>` : ''}
+          
+          ${issue.location ? `
+          <div class="issue-detail">
+            <strong>Location:</strong> ${issue.location}
+          </div>` : ''}
+          
+          ${issue.impact ? `
+          <div class="issue-detail">
+            <strong>Impact:</strong> ${issue.impact}
+          </div>` : ''}
+          
+          <div class="issue-recommendation">
+            <strong>Solution:</strong>
+            <div class="recommendation-content">${issue.recommendation}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  displayTechnicalAnalysis(technicalResults, performanceResults) {
+    if (this.elements.metaAnalysis) {
+      this.elements.metaAnalysis.innerHTML = this.renderMetaAnalysis(technicalResults.metaTags);
+    }
     
-    return card;
-  }
-
-  createIssueDetails(issue) {
-    let details = '<div class="issue-details">';
-    
-    if (issue.currentValue) {
-      details += `
-        <div class="issue-detail-item">
-          <strong>当前状态:</strong> ${issue.currentValue}
-        </div>
-      `;
+    if (this.elements.headingAnalysis) {
+      this.elements.headingAnalysis.innerHTML = this.renderHeadingAnalysis(technicalResults.headingStructure);
     }
     
-    if (issue.expectedValue) {
-      details += `
-        <div class="issue-detail-item">
-          <strong>建议值:</strong> ${issue.expectedValue}
-        </div>
-      `;
+    if (this.elements.linksAnalysis) {
+      this.elements.linksAnalysis.innerHTML = this.renderLinksAnalysis(technicalResults.internalLinks);
     }
     
-    if (issue.impact) {
-      details += `
-        <div class="issue-detail-item">
-          <strong>影响:</strong> ${issue.impact}
+    if (this.elements.imagesAnalysis && performanceResults.imageOptimization) {
+      this.elements.imagesAnalysis.innerHTML = this.renderImagesAnalysis(performanceResults.imageOptimization);
+    }
+  }
+
+  renderMetaAnalysis(metaTags) {
+    return `
+      <div class="analysis-section">
+        <h4>Meta Tags Analysis</h4>
+        <div class="analysis-items">
+          <div class="analysis-item">
+            <span class="analysis-label">Page Title:</span>
+            <span class="analysis-value ${metaTags.hasTitle ? 'good' : 'bad'}">
+              ${metaTags.hasTitle ? '✓ Set' : '✗ Missing'}
+            </span>
+            ${metaTags.titleLength ? `<span class="analysis-detail">${metaTags.titleLength} characters</span>` : ''}
+          </div>
+          
+          <div class="analysis-item">
+            <span class="analysis-label">Meta Description:</span>
+            <span class="analysis-value ${metaTags.hasDescription ? 'good' : 'bad'}">
+              ${metaTags.hasDescription ? '✓ Set' : '✗ Missing'}
+            </span>
+            ${metaTags.descriptionLength ? `<span class="analysis-detail">${metaTags.descriptionLength} characters</span>` : ''}
+          </div>
+          
+          <div class="analysis-item">
+            <span class="analysis-label">Open Graph:</span>
+            <span class="analysis-value ${metaTags.hasOpenGraph ? 'good' : 'neutral'}">
+              ${metaTags.hasOpenGraph ? '✓ Set' : '○ Not Configured'}
+            </span>
+          </div>
+          
+          <div class="analysis-item">
+            <span class="analysis-label">Twitter Cards:</span>
+            <span class="analysis-value ${metaTags.hasTwitterCards ? 'good' : 'neutral'}">
+              ${metaTags.hasTwitterCards ? '✓ Set' : '○ Not Configured'}
+            </span>
+          </div>
         </div>
-      `;
+      </div>
+    `;
+  }
+
+  renderHeadingAnalysis(headingStructure) {
+    return `
+      <div class="analysis-section">
+        <h4>Heading Structure</h4>
+        <div class="analysis-items">
+          <div class="analysis-item">
+            <span class="analysis-label">H1 Tags:</span>
+            <span class="analysis-value ${headingStructure.hasH1 && headingStructure.h1Count === 1 ? 'good' : 'bad'}">
+              ${headingStructure.h1Count} count
+            </span>
+          </div>
+          
+          <div class="analysis-item">
+            <span class="analysis-label">H2 Tags:</span>
+            <span class="analysis-value">${headingStructure.headingDistribution?.h2 || 0} count</span>
+          </div>
+          
+          <div class="analysis-item">
+            <span class="analysis-label">H3 Tags:</span>
+            <span class="analysis-value">${headingStructure.headingDistribution?.h3 || 0} count</span>
+          </div>
+          
+          <div class="analysis-item">
+            <span class="analysis-label">Title Hierarchy:</span>
+            <span class="analysis-value ${headingStructure.headingHierarchy ? 'good' : 'bad'}">
+              ${headingStructure.headingHierarchy ? '✓ Correct' : '⚠ Has Issues'}
+            </span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  renderLinksAnalysis(linksData) {
+    return `
+      <div class="analysis-section">
+        <h4>Links Analysis</h4>
+        <div class="analysis-items">
+          <div class="analysis-item">
+            <span class="analysis-label">Internal Links:</span>
+            <span class="analysis-value">${linksData.internalLinksCount} count</span>
+          </div>
+          
+          <div class="analysis-item">
+            <span class="analysis-label">External Links:</span>
+            <span class="analysis-value">${linksData.externalLinksCount} count</span>
+          </div>
+          
+          <div class="analysis-item">
+            <span class="analysis-label">Broken Links:</span>
+            <span class="analysis-value ${linksData.brokenLinksCount === 0 ? 'good' : 'bad'}">
+              ${linksData.brokenLinksCount} count
+            </span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  renderImagesAnalysis(imageData) {
+    return `
+      <div class="analysis-section">
+        <h4>Image Optimization</h4>
+        <div class="analysis-items">
+          <div class="analysis-item">
+            <span class="analysis-label">Total Images:</span>
+            <span class="analysis-value">${imageData.totalImages} images</span>
+          </div>
+          
+          <div class="analysis-item">
+            <span class="analysis-label">Missing Alt Attribute:</span>
+            <span class="analysis-value ${imageData.imagesWithoutAlt === 0 ? 'good' : 'bad'}">
+              ${imageData.imagesWithoutAlt} images
+            </span>
+          </div>
+          
+          <div class="analysis-item">
+            <span class="analysis-label">Image Optimization:</span>
+            <span class="analysis-value ${imageData.unoptimizedFormats === 0 ? 'good' : 'neutral'}">
+              ${imageData.unoptimizedFormats || 0} unoptimized
+            </span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  displayContentAnalysis(contentResults) {
+    if (this.elements.contentStats) {
+      this.elements.contentStats.innerHTML = this.renderContentStats(contentResults);
     }
     
-    if (issue.location) {
-      details += `
-        <div class="issue-detail-item">
-          <strong>位置:</strong> ${issue.location}
-        </div>
-      `;
-    }
-    
-    details += '</div>';
-    return details;
-  }
-
-  displayTechnicalAnalysis(technical, performance) {
-    // Meta tags analysis
-    if (this.elements.metaAnalysis && technical.metaTags) {
-      this.elements.metaAnalysis.innerHTML = `
-        <div class="tech-item">
-          <span class="tech-label">页面标题</span>
-          <span class="tech-value ${technical.metaTags.hasTitle ? 'good' : 'error'}">
-            ${technical.metaTags.hasTitle ? '✓ 已设置' : '✗ 缺失'}
-          </span>
-        </div>
-        ${technical.metaTags.hasTitle ? `
-        <div class="tech-item">
-          <span class="tech-label">标题长度</span>
-          <span class="tech-value ${this.getTitleLengthStatus(technical.metaTags.titleLength)}">
-            ${technical.metaTags.titleLength} 字符
-          </span>
-        </div>` : ''}
-        <div class="tech-item">
-          <span class="tech-label">Meta描述</span>
-          <span class="tech-value ${technical.metaTags.hasDescription ? 'good' : 'error'}">
-            ${technical.metaTags.hasDescription ? '✓ 已设置' : '✗ 缺失'}
-          </span>
-        </div>
-        ${technical.metaTags.hasDescription ? `
-        <div class="tech-item">
-          <span class="tech-label">描述长度</span>
-          <span class="tech-value ${this.getDescriptionLengthStatus(technical.metaTags.descriptionLength)}">
-            ${technical.metaTags.descriptionLength} 字符
-          </span>
-        </div>` : ''}
-        <div class="tech-item">
-          <span class="tech-label">Open Graph</span>
-          <span class="tech-value ${technical.metaTags.hasOpenGraph ? 'good' : 'warning'}">
-            ${technical.metaTags.hasOpenGraph ? '✓ 已配置' : '○ 未配置'}
-          </span>
-        </div>
-        <div class="tech-item">
-          <span class="tech-label">Twitter Cards</span>
-          <span class="tech-value ${technical.metaTags.hasTwitterCards ? 'good' : 'warning'}">
-            ${technical.metaTags.hasTwitterCards ? '✓ 已配置' : '○ 未配置'}
-          </span>
-        </div>
-      `;
-    }
-
-    // Heading structure analysis
-    if (this.elements.headingAnalysis && technical.headingStructure) {
-      const dist = technical.headingStructure.headingDistribution;
-      this.elements.headingAnalysis.innerHTML = `
-        <div class="tech-item">
-          <span class="tech-label">H1标签</span>
-          <span class="tech-value ${technical.headingStructure.hasH1 ? 'good' : 'error'}">
-            ${technical.headingStructure.h1Count} 个
-          </span>
-        </div>
-        <div class="tech-item">
-          <span class="tech-label">H2标签</span>
-          <span class="tech-value">${dist.h2} 个</span>
-        </div>
-        <div class="tech-item">
-          <span class="tech-label">H3标签</span>
-          <span class="tech-value">${dist.h3} 个</span>
-        </div>
-        <div class="tech-item">
-          <span class="tech-label">H4标签</span>
-          <span class="tech-value">${dist.h4} 个</span>
-        </div>
-        <div class="tech-item">
-          <span class="tech-label">标题层次</span>
-          <span class="tech-value ${technical.headingStructure.headingHierarchy ? 'good' : 'warning'}">
-            ${technical.headingStructure.headingHierarchy ? '✓ 正确' : '⚠ 有问题'}
-          </span>
-        </div>
-      `;
-    }
-
-    // Links analysis
-    if (this.elements.linksAnalysis && technical.internalLinks) {
-      this.elements.linksAnalysis.innerHTML = `
-        <div class="tech-item">
-          <span class="tech-label">内部链接</span>
-          <span class="tech-value">${technical.internalLinks.internalLinksCount} 个</span>
-        </div>
-        <div class="tech-item">
-          <span class="tech-label">外部链接</span>
-          <span class="tech-value">${technical.internalLinks.externalLinksCount} 个</span>
-        </div>
-        <div class="tech-item">
-          <span class="tech-label">损坏链接</span>
-          <span class="tech-value ${technical.internalLinks.brokenLinksCount === 0 ? 'good' : 'error'}">
-            ${technical.internalLinks.brokenLinksCount} 个
-          </span>
-        </div>
-        <div class="tech-item">
-          <span class="tech-label">Canonical URL</span>
-          <span class="tech-value ${technical.canonicalUrl?.hasCanonical ? 'good' : 'warning'}">
-            ${technical.canonicalUrl?.hasCanonical ? '✓ 已设置' : '○ 未设置'}
-          </span>
-        </div>
-        <div class="tech-item">
-          <span class="tech-label">Robots指令</span>
-          <span class="tech-value ${technical.robotsTxt?.isIndexable ? 'good' : 'warning'}">
-            ${technical.robotsTxt?.isIndexable ? '✓ 可索引' : '⚠ 不可索引'}
-          </span>
-        </div>
-      `;
-    }
-
-    // Images analysis
-    if (this.elements.imagesAnalysis && performance?.imageOptimization) {
-      const imageData = performance.imageOptimization;
-      this.elements.imagesAnalysis.innerHTML = `
-        <div class="tech-item">
-          <span class="tech-label">图片总数</span>
-          <span class="tech-value">${imageData.totalImages || 0} 张</span>
-        </div>
-        ${(imageData.totalImages || 0) > 0 ? `
-        <div class="tech-item">
-          <span class="tech-label">缺少Alt属性</span>
-          <span class="tech-value ${(imageData.imagesWithoutAlt || 0) === 0 ? 'good' : 'warning'}">
-            ${imageData.imagesWithoutAlt || 0} 张
-          </span>
-        </div>
-        <div class="tech-item">
-          <span class="tech-label">过大图片</span>
-          <span class="tech-value ${(imageData.oversizedImages || 0) === 0 ? 'good' : 'warning'}">
-            ${imageData.oversizedImages || 0} 张
-          </span>
-        </div>
-        <div class="tech-item">
-          <span class="tech-label">未优化格式</span>
-          <span class="tech-value ${(imageData.unoptimizedFormats || 0) === 0 ? 'good' : 'warning'}">
-            ${imageData.unoptimizedFormats || 0} 张
-          </span>
-        </div>` : `
-        <div class="tech-item">
-          <span class="tech-label">图片分析</span>
-          <span class="tech-value warning">页面无图片</span>
-        </div>`}
-      `;
-    } else if (this.elements.imagesAnalysis) {
-      // 如果没有图片数据，显示简单信息
-      this.elements.imagesAnalysis.innerHTML = `
-        <div class="tech-item">
-          <span class="tech-label">图片分析</span>
-          <span class="tech-value warning">暂无数据</span>
-        </div>
-      `;
+    if (this.elements.readabilityAnalysis) {
+      this.elements.readabilityAnalysis.innerHTML = this.renderReadabilityAnalysis(contentResults);
     }
   }
 
-  displayContentAnalysis(content) {
-    // Content statistics
-    if (this.elements.contentStats && content) {
-      this.elements.contentStats.innerHTML = `
-        <div class="tech-item">
-          <span class="tech-label">字数统计</span>
-          <span class="tech-value ${this.getWordCountStatus(content.wordCount)}">${content.wordCount} 字</span>
+  renderContentStats(contentResults) {
+    return `
+      <div class="analysis-section">
+        <h4>Content Statistics</h4>
+        <div class="analysis-items">
+          <div class="analysis-item">
+            <span class="analysis-label">Word Count:</span>
+            <span class="analysis-value">${contentResults.wordCount} words</span>
+          </div>
+          
+          <div class="analysis-item">
+            <span class="analysis-label">Paragraph Count:</span>
+            <span class="analysis-value">${contentResults.contentStructure?.hasParagraphs ? '✓ Has paragraphs' : '✗ No paragraphs'}</span>
+          </div>
+          
+          <div class="analysis-item">
+            <span class="analysis-label">List Structure:</span>
+            <span class="analysis-value">${contentResults.contentStructure?.hasLists ? '✓ Has lists' : '○ No lists'}</span>
+          </div>
+          
+          <div class="analysis-item">
+            <span class="analysis-label">Image Count:</span>
+            <span class="analysis-value">${contentResults.contentStructure?.hasImages ? '✓ Has images' : '○ No images'}</span>
+          </div>
         </div>
-        <div class="tech-item">
-          <span class="tech-label">段落数量</span>
-          <span class="tech-value">${content.contentStructure?.hasParagraphs ? '✓' : '✗'} 有段落</span>
-        </div>
-        <div class="tech-item">
-          <span class="tech-label">列表结构</span>
-          <span class="tech-value">${content.contentStructure?.hasLists ? '✓' : '○'} ${content.contentStructure?.hasLists ? '有列表' : '无列表'}</span>
-        </div>
-        <div class="tech-item">
-          <span class="tech-label">图片数量</span>
-          <span class="tech-value">${content.contentStructure?.hasImages ? '✓' : '○'} ${content.contentStructure?.hasImages ? '有图片' : '无图片'}</span>
-        </div>
-        <div class="tech-item">
-          <span class="tech-label">文本/HTML比例</span>
-          <span class="tech-value">${Math.round((content.contentStructure?.textToHtmlRatio || 0) * 100)}%</span>
-        </div>
-      `;
-    }
-
-    // Readability analysis
-    if (this.elements.readabilityAnalysis && content) {
-      this.elements.readabilityAnalysis.innerHTML = `
-        <div class="tech-item">
-          <span class="tech-label">可读性评分</span>
-          <span class="tech-value ${this.getReadabilityStatus(content.readabilityScore)}">${content.readabilityScore}/100</span>
-        </div>
-        <div class="tech-item">
-          <span class="tech-label">重复内容</span>
-          <span class="tech-value ${content.duplicateContent?.duplicateContentPercentage === 0 ? 'good' : 'warning'}">
-            ${content.duplicateContent?.duplicateContentPercentage || 0}%
-          </span>
-        </div>
-        <div class="tech-item">
-          <span class="tech-label">关键词密度</span>
-          <span class="tech-value">
-            ${Object.keys(content.keywordDensity || {}).length} 个关键词
-          </span>
-        </div>
-      `;
-    }
+      </div>
+    `;
   }
 
-  displayPerformanceAnalysis(performance) {
-    if (this.elements.pagePerformance && performance) {
-      this.elements.pagePerformance.innerHTML = `
-        <div class="tech-item">
-          <span class="tech-label">页面大小</span>
-          <span class="tech-value">${this.formatFileSize(performance.pageSize || 0)}</span>
+  renderReadabilityAnalysis(contentResults) {
+    return `
+      <div class="analysis-section">
+        <h4>Readability Analysis</h4>
+        <div class="analysis-items">
+          <div class="analysis-item">
+            <span class="analysis-label">Readability Score:</span>
+            <span class="analysis-value">${contentResults.readabilityScore || 'No Data'}</span>
+          </div>
+          
+          <div class="analysis-item">
+            <span class="analysis-label">Text/HTML Ratio:</span>
+            <span class="analysis-value">${contentResults.contentStructure?.textToHtmlRatio || 0}%</span>
+          </div>
+          
+          <div class="analysis-item">
+            <span class="analysis-label">Duplicate Content:</span>
+            <span class="analysis-value ${!contentResults.duplicateContent?.hasDuplicateTitle ? 'good' : 'bad'}">
+              ${contentResults.duplicateContent?.duplicateContentPercentage || 0}%
+            </span>
+          </div>
         </div>
-        <div class="tech-item">
-          <span class="tech-label">加载时间</span>
-          <span class="tech-value ${this.getLoadTimeStatus(performance.loadTime)}">${(performance.loadTime || 0).toFixed(2)}s</span>
-        </div>
-        <div class="tech-item">
-          <span class="tech-label">图片总数</span>
-          <span class="tech-value">${performance.imageOptimization?.totalImages || 0} 张</span>
-        </div>
-        <div class="tech-item">
-          <span class="tech-label">缺少Alt属性</span>
-          <span class="tech-value ${(performance.imageOptimization?.imagesWithoutAlt || 0) === 0 ? 'good' : 'warning'}">
-            ${performance.imageOptimization?.imagesWithoutAlt || 0} 张
-          </span>
-        </div>
-        <div class="tech-item">
-          <span class="tech-label">图片优化</span>
-          <span class="tech-value ${(performance.imageOptimization?.unoptimizedFormats || 0) === 0 ? 'good' : 'warning'}">
-            ${performance.imageOptimization?.unoptimizedFormats || 0} 张未优化
-          </span>
-        </div>
-      `;
+      </div>
+    `;
+  }
+
+  displayPerformanceAnalysis(performanceResults) {
+    if (this.elements.pagePerformance) {
+      this.elements.pagePerformance.innerHTML = this.renderPagePerformance(performanceResults);
     }
   }
 
-  // Helper methods for status determination
-  getTitleLengthStatus(length) {
-    if (length >= 30 && length <= 60) return 'good';
-    if (length >= 20 && length <= 70) return 'warning';
-    return 'error';
-  }
-
-  getDescriptionLengthStatus(length) {
-    if (length >= 120 && length <= 160) return 'good';
-    if (length >= 100 && length <= 180) return 'warning';
-    return 'error';
-  }
-
-  getWordCountStatus(count) {
-    if (count >= 300) return 'good';
-    if (count >= 150) return 'warning';
-    return 'error';
-  }
-
-  getReadabilityStatus(score) {
-    if (score >= 70) return 'good';
-    if (score >= 50) return 'warning';
-    return 'error';
-  }
-
-  getLoadTimeStatus(time) {
-    if (time <= 2) return 'good';
-    if (time <= 4) return 'warning';
-    return 'error';
-  }
-
-  formatFileSize(bytes) {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  renderPagePerformance(performanceResults) {
+    return `
+      <div class="analysis-section">
+        <h4>Page Performance</h4>
+        <div class="analysis-items">
+          <div class="analysis-item">
+            <span class="analysis-label">Page Size:</span>
+            <span class="analysis-value">${performanceResults.pageSize ? (performanceResults.pageSize / 1024).toFixed(1) + ' KB' : 'No Data'}</span>
+          </div>
+          
+          <div class="analysis-item">
+            <span class="analysis-label">Load Time:</span>
+            <span class="analysis-value">${performanceResults.loadTime ? performanceResults.loadTime.toFixed(2) + ' seconds' : 'No Data'}</span>
+          </div>
+          
+          <div class="analysis-item">
+            <span class="analysis-label">Total Images:</span>
+            <span class="analysis-value">${performanceResults.imageOptimization?.totalImages || 0} images</span>
+          </div>
+          
+          <div class="analysis-item">
+            <span class="analysis-label">Missing Alt Attribute:</span>
+            <span class="analysis-value">${performanceResults.imageOptimization?.imagesWithoutAlt || 0} images</span>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   displayAISuggestions(suggestions) {
-    if (!this.elements.aiSuggestionsList) return;
-
-    // Clear existing content
-    this.elements.aiSuggestionsList.innerHTML = '';
-    
-    // Check if AI suggestions exist and have content
-    const hasAISuggestions = suggestions && (
-      suggestions.titleOptimization || 
-      suggestions.metaDescriptionSuggestion || 
-      (suggestions.contentImprovements && suggestions.contentImprovements.length > 0) ||
-      suggestions.keywordSuggestions || 
-      (suggestions.structureRecommendations && suggestions.structureRecommendations.length > 0) ||
-      suggestions.summary
-    );
-    
-    if (!hasAISuggestions) {
-      // Show loading/not generated message
-      if (this.elements.aiSuggestionsLoading) {
-        this.elements.aiSuggestionsLoading.classList.remove('hidden');
+    if (!suggestions) {
+      if (this.elements.aiSuggestionsContent) {
+        this.elements.aiSuggestionsContent.innerHTML = `
+          <div class="no-suggestions">
+            <p>AI suggestions not generated yet, please click 'Generate AI Suggestions' button in the extension</p>
+          </div>
+        `;
       }
       return;
     }
 
-    // Hide loading message
-    if (this.elements.aiSuggestionsLoading) {
-      this.elements.aiSuggestionsLoading.classList.add('hidden');
-    }
+    if (this.elements.aiSuggestionsList) {
+      this.elements.aiSuggestionsList.innerHTML = '';
 
-    // Check if there's a summary (no issues found)
-    if (suggestions.summary) {
-      this.createAISummarySection(suggestions.summary);
-      return;
-    }
+      // Check if there's a summary (no issues found)
+      if (suggestions.summary) {
+        this.createSummarySection(suggestions.summary);
+        return;
+      }
 
-    // Create suggestions sections
-    if (suggestions.titleOptimization) {
-      this.createAITitleSection(suggestions.titleOptimization);
-    }
-    if (suggestions.metaDescriptionSuggestion) {
-      this.createAIMetaSection(suggestions.metaDescriptionSuggestion);
-    }
-    if (suggestions.contentImprovements && suggestions.contentImprovements.length > 0) {
-      this.createAIContentSection(suggestions.contentImprovements);
-    }
-    if (suggestions.keywordSuggestions) {
-      this.createAIKeywordSection(suggestions.keywordSuggestions);
-    }
-    if (suggestions.structureRecommendations && suggestions.structureRecommendations.length > 0) {
-      this.createAIStructureSection(suggestions.structureRecommendations);
+      // Create suggestions sections
+      if (suggestions.titleOptimization) {
+        this.createTitleOptimizationSection(suggestions.titleOptimization);
+      }
+      if (suggestions.metaDescriptionSuggestion) {
+        this.createMetaDescriptionSection(suggestions.metaDescriptionSuggestion);
+      }
+      if (suggestions.contentImprovements) {
+        this.createContentImprovementsSection(suggestions.contentImprovements);
+      }
+      if (suggestions.keywordSuggestions) {
+        this.createKeywordSuggestionsSection(suggestions.keywordSuggestions);
+      }
+      if (suggestions.structureRecommendations) {
+        this.createStructureRecommendationsSection(suggestions.structureRecommendations);
+      }
     }
   }
 
-  createAISummarySection(summary) {
+  createSummarySection(summary) {
     const section = document.createElement('div');
-    section.className = 'ai-suggestion-card summary-card';
-    
+    section.className = 'suggestion-section summary-section';
+
     section.innerHTML = `
-      <div class="ai-card-header">
-        <h3>🎉 SEO状况良好</h3>
+      <div class="suggestion-header">
+        <h4>🎉 SEO Status Good</h4>
       </div>
-      <div class="ai-card-content">
-        <div class="summary-message">
-          ${summary.message}
-        </div>
-        ${summary.suggestions && summary.suggestions.length > 0 ? `
-        <div class="summary-suggestions">
-          <h4>持续优化建议:</h4>
+      <div class="suggestion-content">
+        <div class="summary-message">${summary.message}</div>
+        ${summary.continuousOptimization && summary.continuousOptimization.length > 0 ? `
+        <div class="continuous-optimization">
+          <strong>Continuous Optimization Suggestions:</strong>
           <ul>
-            ${summary.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+            ${summary.continuousOptimization.map(tip => `<li>${tip}</li>`).join('')}
           </ul>
         </div>` : ''}
       </div>
@@ -628,50 +577,52 @@ class DetailedReportUI {
     this.elements.aiSuggestionsList.appendChild(section);
   }
 
-  createAITitleSection(titleOpt) {
+  createTitleOptimizationSection(titleOpt) {
     if (!titleOpt) return;
-    
+
     const section = document.createElement('div');
-    section.className = 'ai-suggestion-card';
-    
-    const hasImprovement = titleOpt.suggestion && titleOpt.suggestion !== '当前标题已经很好';
-    
+    section.className = 'suggestion-section';
+
+    const goodTitleText = 'Current title is already good';
+    const hasImprovement = titleOpt.suggestion && titleOpt.suggestion !== goodTitleText;
+
     section.innerHTML = `
-      <div class="ai-card-header">
-        <h3>📝 标题优化建议</h3>
-        <span class="ai-status ${titleOpt.length?.status || 'unknown'}">${this.getAIStatusText(titleOpt.length?.status)}</span>
+      <div class="suggestion-header">
+        <h4>📝 Title Optimization Suggestions</h4>
+        <span class="suggestion-status ${titleOpt.length?.status || 'unknown'}">${this.getStatusText(titleOpt.length?.status)}</span>
       </div>
-      <div class="ai-card-content">
+      <div class="suggestion-content">
         ${titleOpt.current ? `
         <div class="current-content">
-          <h4>当前标题:</h4>
-          <div class="content-display">${titleOpt.current}</div>
-          <small class="content-meta">长度: ${titleOpt.length?.current || titleOpt.current.length} 字符</small>
+          <strong>Current Title:</strong>
+          <div class="content-box">${titleOpt.current}</div>
+          <small>Length: ${titleOpt.length?.current || titleOpt.current.length} characters</small>
         </div>` : ''}
         
         ${hasImprovement ? `
         <div class="suggested-content">
-          <h4>优化建议:</h4>
-          <div class="content-display suggested">${titleOpt.suggestion}</div>
-          <button class="copy-btn" onclick="navigator.clipboard.writeText('${titleOpt.suggestion.replace(/'/g, "\\'")}')">复制建议</button>
+          <strong>Optimization Suggestion:</strong>
+          <div class="content-box suggested">${titleOpt.suggestion}</div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('${titleOpt.suggestion.replace(/'/g, "\\'")}')">
+            Copy Suggestion
+          </button>
         </div>` : ''}
         
-        <div class="ai-analysis">
-          <h4>AI分析:</h4>
-          <p>${titleOpt.reason}</p>
+        <div class="suggestion-reason">
+          <strong>AI Analysis:</strong> ${titleOpt.reason}
         </div>
         
         ${titleOpt.improvements && titleOpt.improvements.length > 0 ? `
-        <div class="improvement-points">
-          <h4>改进要点:</h4>
+        <div class="improvement-tips">
+          <strong>Improvement Points:</strong>
           <ul>
             ${titleOpt.improvements.map(tip => `<li>${tip}</li>`).join('')}
           </ul>
         </div>` : ''}
         
         ${titleOpt.keywords && titleOpt.keywords.length > 0 ? `
-        <div class="keyword-recommendations">
-          <h4>推荐关键词:</h4>
+        <div class="keyword-suggestions">
+          <strong>Recommended Keywords:</strong>
           <div class="keyword-tags">
             ${titleOpt.keywords.map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
           </div>
@@ -682,42 +633,53 @@ class DetailedReportUI {
     this.elements.aiSuggestionsList.appendChild(section);
   }
 
-  createAIMetaSection(metaOpt) {
+  createMetaDescriptionSection(metaOpt) {
     if (!metaOpt) return;
-    
+
     const section = document.createElement('div');
-    section.className = 'ai-suggestion-card';
-    
-    const hasImprovement = metaOpt.suggestion && metaOpt.suggestion !== '当前描述已经很好';
-    
+    section.className = 'suggestion-section';
+
+    const goodDescriptionText = 'Current description is already good';
+    const hasImprovement = metaOpt.suggestion && metaOpt.suggestion !== goodDescriptionText;
+
     section.innerHTML = `
-      <div class="ai-card-header">
-        <h3>📄 Meta描述优化</h3>
-        <span class="ai-status ${metaOpt.length?.status || 'unknown'}">${this.getAIStatusText(metaOpt.length?.status)}</span>
+      <div class="suggestion-header">
+        <h4>📄 Meta Description Optimization</h4>
+        <span class="suggestion-status ${metaOpt.length?.status || 'unknown'}">${this.getStatusText(metaOpt.length?.status)}</span>
       </div>
-      <div class="ai-card-content">
+      <div class="suggestion-content">
         ${metaOpt.current ? `
         <div class="current-content">
-          <h4>当前描述:</h4>
-          <div class="content-display">${metaOpt.current}</div>
-          <small class="content-meta">长度: ${metaOpt.length?.current || metaOpt.current.length} 字符</small>
+          <strong>Current Description:</strong>
+          <div class="content-box">${metaOpt.current}</div>
+          <small>Length: ${metaOpt.length?.current || metaOpt.current.length} characters</small>
         </div>` : ''}
         
         ${hasImprovement ? `
         <div class="suggested-content">
-          <h4>优化建议:</h4>
-          <div class="content-display suggested">${metaOpt.suggestion}</div>
-          <button class="copy-btn" onclick="navigator.clipboard.writeText('${metaOpt.suggestion.replace(/'/g, "\\'")}')">复制建议</button>
+          <strong>Optimization Suggestion:</strong>
+          <div class="content-box suggested">${metaOpt.suggestion}</div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('${metaOpt.suggestion.replace(/'/g, "\\'")}')">
+            Copy Suggestion
+          </button>
         </div>` : ''}
         
-        <div class="ai-analysis">
-          <h4>AI分析:</h4>
-          <p>${metaOpt.reason}</p>
+        ${metaOpt.template ? `
+        <div class="suggested-content">
+          <strong>Suggested Template:</strong>
+          <div class="content-box suggested">${metaOpt.template}</div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('${metaOpt.template.replace(/'/g, "\\'")}')">
+            Copy Suggestion
+          </button>
+        </div>` : ''}
+        
+        <div class="suggestion-reason">
+          <strong>AI Analysis:</strong> ${metaOpt.reason}
         </div>
         
         ${metaOpt.guidelines && metaOpt.guidelines.length > 0 ? `
-        <div class="guidelines">
-          <h4>编写指南:</h4>
+        <div class="improvement-tips">
+          <strong>Writing Guidelines:</strong>
           <ul>
             ${metaOpt.guidelines.map(tip => `<li>${tip}</li>`).join('')}
           </ul>
@@ -728,28 +690,28 @@ class DetailedReportUI {
     this.elements.aiSuggestionsList.appendChild(section);
   }
 
-  createAIContentSection(improvements) {
-    if (!improvements || !Array.isArray(improvements) || improvements.length === 0) return;
-    
+  createContentImprovementsSection(improvements) {
+    if (!improvements || improvements.length === 0) return;
+
     const section = document.createElement('div');
-    section.className = 'ai-suggestion-card';
-    
+    section.className = 'suggestion-section';
+
     section.innerHTML = `
-      <div class="ai-card-header">
-        <h3>✨ 内容改进建议</h3>
-        <span class="ai-count">${improvements.length} 项建议</span>
+      <div class="suggestion-header">
+        <h4>✨ Content Improvement Suggestions</h4>
+        <span class="suggestion-count">${improvements.length === 1 ? '1 suggestion' : `${improvements.length} suggestions`}</span>
       </div>
-      <div class="ai-card-content">
+      <div class="suggestion-content">
         ${improvements.map(improvement => `
           <div class="improvement-item ${improvement.priority}">
             <div class="improvement-header">
-              <span class="priority-badge ${improvement.priority}">${this.getAIPriorityText(improvement.priority)}</span>
-              <h4>${improvement.title}</h4>
+              <span class="priority-badge ${improvement.priority}">${this.getPriorityText(improvement.priority)}</span>
+              <strong>${improvement.title}</strong>
             </div>
             <div class="improvement-description">${improvement.description}</div>
             ${improvement.suggestions && improvement.suggestions.length > 0 ? `
             <div class="improvement-suggestions">
-              <h5>具体建议:</h5>
+              <strong>Specific Suggestions:</strong>
               <ul>
                 ${improvement.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
               </ul>
@@ -762,56 +724,46 @@ class DetailedReportUI {
     this.elements.aiSuggestionsList.appendChild(section);
   }
 
-  createAIKeywordSection(keywords) {
-    if (!keywords) return;
-    
+  createKeywordSuggestionsSection(keywordSuggestions) {
+    if (!keywordSuggestions) return;
+
     const section = document.createElement('div');
-    section.className = 'ai-suggestion-card';
-    
+    section.className = 'suggestion-section';
+
     section.innerHTML = `
-      <div class="ai-card-header">
-        <h3>🔍 关键词建议</h3>
+      <div class="suggestion-header">
+        <h4>🔍 Keyword Suggestions</h4>
       </div>
-      <div class="ai-card-content">
-        ${keywords.primary && keywords.primary.length > 0 ? `
-        <div class="keyword-category">
-          <h4>主要关键词:</h4>
-          <div class="keyword-list">
-            ${keywords.primary.map(kw => `
-              <div class="keyword-item">
-                <span class="keyword">${kw.keyword}</span>
-                <small class="keyword-suggestion">${kw.suggestion}</small>
-              </div>
-            `).join('')}
-          </div>
-        </div>` : ''}
-        
-        ${keywords.secondary && keywords.secondary.length > 0 ? `
-        <div class="keyword-category">
-          <h4>次要关键词:</h4>
-          <div class="keyword-list">
-            ${keywords.secondary.map(kw => `
-              <div class="keyword-item">
-                <span class="keyword">${kw.keyword}</span>
-                <small class="keyword-suggestion">${kw.suggestion}</small>
-              </div>
-            `).join('')}
-          </div>
-        </div>` : ''}
-        
-        ${keywords.longTail && keywords.longTail.length > 0 ? `
-        <div class="keyword-category">
-          <h4>长尾关键词:</h4>
+      <div class="suggestion-content">
+        ${keywordSuggestions.primary && keywordSuggestions.primary.length > 0 ? `
+        <div class="keyword-group">
+          <strong>Primary Keywords:</strong>
           <div class="keyword-tags">
-            ${keywords.longTail.map(kw => `<span class="keyword-tag" title="${kw.suggestion}">${kw.keyword}</span>`).join('')}
+            ${keywordSuggestions.primary.map(keyword => `<span class="keyword-tag primary">${keyword}</span>`).join('')}
           </div>
         </div>` : ''}
         
-        ${keywords.semantic && keywords.semantic.length > 0 ? `
-        <div class="keyword-category">
-          <h4>语义相关词:</h4>
+        ${keywordSuggestions.secondary && keywordSuggestions.secondary.length > 0 ? `
+        <div class="keyword-group">
+          <strong>Secondary Keywords:</strong>
           <div class="keyword-tags">
-            ${keywords.semantic.map(kw => `<span class="keyword-tag" title="${kw.suggestion}">${kw.keyword}</span>`).join('')}
+            ${keywordSuggestions.secondary.map(keyword => `<span class="keyword-tag secondary">${keyword}</span>`).join('')}
+          </div>
+        </div>` : ''}
+        
+        ${keywordSuggestions.longTail && keywordSuggestions.longTail.length > 0 ? `
+        <div class="keyword-group">
+          <strong>Long-tail Keywords:</strong>
+          <div class="keyword-tags">
+            ${keywordSuggestions.longTail.map(keyword => `<span class="keyword-tag long-tail">${keyword}</span>`).join('')}
+          </div>
+        </div>` : ''}
+        
+        ${keywordSuggestions.semantic && keywordSuggestions.semantic.length > 0 ? `
+        <div class="keyword-group">
+          <strong>Semantic Keywords:</strong>
+          <div class="keyword-tags">
+            ${keywordSuggestions.semantic.map(keyword => `<span class="keyword-tag semantic">${keyword}</span>`).join('')}
           </div>
         </div>` : ''}
       </div>
@@ -820,30 +772,29 @@ class DetailedReportUI {
     this.elements.aiSuggestionsList.appendChild(section);
   }
 
-  createAIStructureSection(recommendations) {
-    if (!recommendations || !Array.isArray(recommendations) || recommendations.length === 0) return;
-    
+  createStructureRecommendationsSection(recommendations) {
+    if (!recommendations || recommendations.length === 0) return;
+
     const section = document.createElement('div');
-    section.className = 'ai-suggestion-card';
-    
+    section.className = 'suggestion-section';
+
     section.innerHTML = `
-      <div class="ai-card-header">
-        <h3>🏗️ 结构优化建议</h3>
-        <span class="ai-count">${recommendations.length} 项建议</span>
+      <div class="suggestion-header">
+        <h4>🏗️ Structure Optimization Suggestions</h4>
+        <span class="suggestion-count">${recommendations.length === 1 ? '1 suggestion' : `${recommendations.length} suggestions`}</span>
       </div>
-      <div class="ai-card-content">
+      <div class="suggestion-content">
         ${recommendations.map(rec => `
-          <div class="recommendation-item ${rec.priority}">
+          <div class="structure-recommendation">
             <div class="recommendation-header">
-              <span class="priority-badge ${rec.priority}">${this.getAIPriorityText(rec.priority)}</span>
-              <h4>${rec.title}</h4>
+              <strong>${rec.title}</strong>
             </div>
             <div class="recommendation-description">${rec.description}</div>
-            ${rec.implementation && rec.implementation.length > 0 ? `
+            ${rec.steps && rec.steps.length > 0 ? `
             <div class="implementation-steps">
-              <h5>实施步骤:</h5>
+              <strong>Implementation Steps:</strong>
               <ol>
-                ${rec.implementation.map(step => `<li>${step}</li>`).join('')}
+                ${rec.steps.map(step => `<li>${step}</li>`).join('')}
               </ol>
             </div>` : ''}
           </div>
@@ -854,53 +805,120 @@ class DetailedReportUI {
     this.elements.aiSuggestionsList.appendChild(section);
   }
 
-  getAIStatusText(status) {
-    const statusMap = {
-      'good': '✅ 良好',
-      'needs-improvement': '⚠️ 需改进',
-      'unknown': '❓ 未知'
-    };
-    return statusMap[status] || '❓ 未知';
-  }
-
-  getAIPriorityText(priority) {
-    const priorityMap = {
-      'critical': '🔴 严重',
-      'high': '🟠 高',
-      'medium': '🟡 中',
-      'low': '🟢 低'
-    };
-    return priorityMap[priority] || '❓ 未知';
-  }
-
   exportToPDF() {
-    // Simple PDF export using browser's print functionality
+    // Simple print functionality - browsers handle PDF export
     window.print();
   }
 
+  getSeverityText(severity) {
+    const severityMap = {
+      'critical': 'Critical',
+      'high': 'High',
+      'medium': 'Medium',
+      'low': 'Low'
+    };
+    return severityMap[severity] || severity;
+  }
+
+  getPriorityText(priority) {
+    const priorityMap = {
+      'critical': 'Critical',
+      'high': 'High',
+      'medium': 'Medium',
+      'low': 'Low'
+    };
+    return priorityMap[priority] || priority;
+  }
+
+  getStatusText(status) {
+    const statusMap = {
+      'good': '✅ Good',
+      'needs-improvement': '⚠️ Needs Improvement',
+      'unknown': '❓ Unknown'
+    };
+    return statusMap[status] || '❓ Unknown';
+  }
+
+  updateScoreColor(element, score) {
+    element.classList.remove('score-excellent', 'score-good', 'score-fair', 'score-poor');
+    if (score >= 90) {
+      element.classList.add('score-excellent');
+    } else if (score >= 70) {
+      element.classList.add('score-good');
+    } else if (score >= 50) {
+      element.classList.add('score-fair');
+    } else {
+      element.classList.add('score-poor');
+    }
+  }
+
+  updateScoreNumberColor(element, score) {
+    element.classList.remove('score-excellent', 'score-good', 'score-fair', 'score-poor');
+    if (score >= 90) {
+      element.classList.add('score-excellent');
+    } else if (score >= 70) {
+      element.classList.add('score-good');
+    } else if (score >= 50) {
+      element.classList.add('score-fair');
+    } else {
+      element.classList.add('score-poor');
+    }
+  }
+
+  updateProgressBarColor(element, score) {
+    element.classList.remove('progress-excellent', 'progress-good', 'progress-fair', 'progress-poor');
+    if (score >= 90) {
+      element.classList.add('progress-excellent');
+    } else if (score >= 70) {
+      element.classList.add('progress-good');
+    } else if (score >= 50) {
+      element.classList.add('progress-fair');
+    } else {
+      element.classList.add('progress-poor');
+    }
+  }
+
   showLoading() {
-    this.elements.loading?.classList.remove('hidden');
-    this.elements.error?.classList.add('hidden');
-    this.elements.reportContent?.classList.add('hidden');
+    if (this.elements.loading) {
+      this.elements.loading.classList.remove('hidden');
+    }
+    if (this.elements.error) {
+      this.elements.error.classList.add('hidden');
+    }
+    if (this.elements.reportContent) {
+      this.elements.reportContent.style.display = 'none';
+    }
   }
 
   showError(message) {
+    if (this.elements.loading) {
+      this.elements.loading.classList.add('hidden');
+    }
+    if (this.elements.error) {
+      this.elements.error.classList.remove('hidden');
+    }
     if (this.elements.errorMessage) {
       this.elements.errorMessage.textContent = message;
     }
-    this.elements.loading?.classList.add('hidden');
-    this.elements.error?.classList.remove('hidden');
-    this.elements.reportContent?.classList.add('hidden');
+    if (this.elements.reportContent) {
+      this.elements.reportContent.style.display = 'none';
+    }
   }
 
   showReport() {
-    this.elements.loading?.classList.add('hidden');
-    this.elements.error?.classList.add('hidden');
-    this.elements.reportContent?.classList.remove('hidden');
+    if (this.elements.loading) {
+      this.elements.loading.classList.add('hidden');
+    }
+    if (this.elements.error) {
+      this.elements.error.classList.add('hidden');
+    }
+    if (this.elements.reportContent) {
+      this.elements.reportContent.style.display = 'block';
+    }
   }
 }
 
-// Initialize when DOM is loaded
+// Initialize the detailed report when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   new DetailedReportUI();
 });

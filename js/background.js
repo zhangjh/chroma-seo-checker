@@ -126,19 +126,19 @@ class SimpleBackgroundService {
       const { tabId } = message;
       
       if (!tabId) {
-        throw new Error('缺少标签页ID');
+        throw new Error('Missing tab ID');
       }
 
       const tab = await chrome.tabs.get(tabId);
       if (!tab.url) {
-        throw new Error('无法获取页面URL');
+        throw new Error('Cannot get page URL');
       }
 
       const report = await this.storageManager.getReportByUrl(tab.url);
       sendResponse({ report: report });
     } catch (error) {
-      sendResponse({ 
-        error: error.message || '获取页面分析失败' 
+      sendResponse({
+        error: error.message || 'Failed to get page analysis'
       });
     }
   }
@@ -148,7 +148,7 @@ class SimpleBackgroundService {
       const { tabId } = message;
       
       if (!tabId) {
-        throw new Error('缺少标签页ID');
+        throw new Error('Missing tab ID');
       }
 
       // Check if tab exists and is valid
@@ -156,31 +156,40 @@ class SimpleBackgroundService {
         const tab = await chrome.tabs.get(tabId);
         
         if (!tab.url || (!tab.url.startsWith('http://') && !tab.url.startsWith('https://'))) {
-          throw new Error('当前页面不是有效的网页，SEO分析仅支持HTTP/HTTPS页面');
+          throw new Error('Current page is not a valid webpage, SEO analysis only supports HTTP/HTTPS pages');
         }
       } catch (tabError) {
-        throw new Error('无法访问当前标签页');
+        throw new Error('Cannot access current tab');
       }
 
       // Set analysis status to running
-      this.analysisStatus.set(tabId, { status: 'running', startTime: Date.now() });
-      
+      this.analysisStatus.set(tabId, {
+        status: 'running',
+        startTime: Date.now()
+      });
+
       try {
         // Trigger content script analysis
         await chrome.tabs.sendMessage(tabId, { type: 'START_ANALYSIS' });
       } catch (contentError) {
-        this.analysisStatus.set(tabId, { status: 'failed', startTime: Date.now() });
-        throw new Error('无法与页面内容脚本通信，请刷新页面后重试');
+        this.analysisStatus.set(tabId, {
+          status: 'failed',
+          startTime: Date.now()
+        });
+        throw new Error('Cannot communicate with page content script, please refresh the page and try again');
       }
-      
-      sendResponse({ success: true, message: '分析已开始' });
+
+      sendResponse({ success: true, message: 'Analysis started' });
     } catch (error) {
       const { tabId } = message;
       if (tabId) {
-        this.analysisStatus.set(tabId, { status: 'failed', startTime: Date.now() });
+        this.analysisStatus.set(tabId, {
+          status: 'failed',
+          startTime: Date.now()
+        });
       }
-      sendResponse({ 
-        error: error.message || '启动分析失败' 
+      sendResponse({
+        error: error.message || 'Failed to start analysis'
       });
     }
   }
@@ -190,12 +199,12 @@ class SimpleBackgroundService {
       const { tabId } = message;
       
       if (!tabId) {
-        throw new Error('缺少标签页ID');
+        throw new Error('Missing tab ID');
       }
 
       const tab = await chrome.tabs.get(tabId);
       if (!tab.url) {
-        throw new Error('无法获取页面URL');
+        throw new Error('Cannot get page URL');
       }
 
       // Check current analysis status
@@ -203,25 +212,25 @@ class SimpleBackgroundService {
 
       if (currentStatus) {
         if (currentStatus.status === 'running') {
-          sendResponse({ 
+          sendResponse({
             completed: false,
             running: true,
-            message: '分析正在进行中...',
+            message: 'Analysis in progress...',
             progress: currentStatus.progress
           });
           return;
         } else if (currentStatus.status === 'failed') {
-          sendResponse({ 
+          sendResponse({
             completed: false,
-            error: '分析失败，请重试'
+            error: 'Analysis failed, please retry'
           });
           return;
         } else if (currentStatus.status === 'completed') {
           const report = await this.storageManager.getReportByUrl(tab.url);
           if (report) {
-            sendResponse({ 
+            sendResponse({
               completed: true,
-              report: report 
+              report: report
             });
             return;
           }
@@ -234,16 +243,19 @@ class SimpleBackgroundService {
       const isRecent = report && (Date.now() - new Date(report.timestamp).getTime()) < 5 * 60 * 1000;
       
       if (isRecent) {
-        this.analysisStatus.set(tabId, { status: 'completed', startTime: Date.now() });
+        this.analysisStatus.set(tabId, {
+          status: 'completed',
+          startTime: Date.now()
+        });
       }
-      
-      sendResponse({ 
+
+      sendResponse({
         completed: !!report && isRecent,
-        report: report 
+        report: report
       });
     } catch (error) {
-      sendResponse({ 
-        error: error.message || '获取分析状态失败' 
+      sendResponse({
+        error: error.message || 'Failed to get analysis status'
       });
     }
   }
@@ -256,8 +268,13 @@ class SimpleBackgroundService {
       }
 
       const tabId = sender.tab?.id;
+
       if (tabId) {
-        this.analysisStatus.set(tabId, { status: 'completed', startTime: Date.now() });
+        // Update status to completed
+        this.analysisStatus.set(tabId, {
+          status: 'completed',
+          startTime: Date.now()
+        });
       }
 
       // Convert analysis to SEO report
@@ -270,7 +287,10 @@ class SimpleBackgroundService {
     } catch (error) {
       const tabId = sender.tab?.id;
       if (tabId) {
-        this.analysisStatus.set(tabId, { status: 'failed', startTime: Date.now() });
+        this.analysisStatus.set(tabId, {
+          status: 'failed',
+          startTime: Date.now()
+        });
       }
       sendResponse({ error: error.message || 'Unknown error' });
     }
@@ -321,8 +341,8 @@ class SimpleBackgroundService {
 
       sendResponse({ success: true });
     } catch (error) {
-      sendResponse({ 
-        error: error.message || '打开详细报告失败' 
+      sendResponse({
+        error: error.message || 'Failed to open detailed report'
       });
     }
   }
@@ -346,9 +366,9 @@ class SimpleBackgroundService {
       const reports = await this.storageManager.getAllReports();
       
       if (reports.length === 0) {
-        sendResponse({ 
+        sendResponse({
           report: null,
-          error: '没有找到任何分析报告，请先运行SEO分析' 
+          error: 'No analysis reports found, please run SEO analysis first'
         });
         return;
       }
@@ -357,8 +377,8 @@ class SimpleBackgroundService {
       const latestReport = reports[0];
       sendResponse({ report: latestReport });
     } catch (error) {
-      sendResponse({ 
-        error: error.message || '获取最新报告失败' 
+      sendResponse({
+        error: error.message || 'Failed to get latest report'
       });
     }
   }
@@ -368,19 +388,19 @@ class SimpleBackgroundService {
       const { tabId } = message;
       
       if (!tabId) {
-        throw new Error('缺少标签页ID');
+        throw new Error('Missing tab ID');
       }
 
       // Get current tab URL
       const tab = await chrome.tabs.get(tabId);
       if (!tab.url) {
-        throw new Error('无法获取页面URL');
+        throw new Error('Cannot get page URL');
       }
 
       // Get existing report
       const report = await this.storageManager.getReportByUrl(tab.url);
       if (!report) {
-        throw new Error('请先运行SEO分析，然后再生成AI建议');
+        throw new Error('Please run SEO analysis first, then generate AI suggestions');
       }
 
       // Set up progress callback to communicate with popup
@@ -407,15 +427,15 @@ class SimpleBackgroundService {
       });
 
       // Get the original analysis data from storage or reconstruct it
-      console.log('[Background] 获取分析数据...');
+      console.log('[Background] Getting analysis data...');
       const analysisData = await this.getAnalysisDataForReport(report);
-      console.log('[Background] 分析数据获取完成');
-      
+      console.log('[Background] Analysis data retrieved');
+
       // Generate AI optimizations based on SEO issues
-      console.log('[Background] 开始生成AI优化建议，SEO问题数量:', report.issues?.length || 0);
+      console.log('[Background] Starting AI optimization suggestions, SEO issues count:', report.issues?.length || 0);
       const optimizations = await this.aiOptimizer.generateContentOptimizations(analysisData, report.issues);
-      console.log('[Background] AI优化建议生成完成');
-      
+      console.log('[Background] AI optimization suggestions completed');
+
       // Clear progress callback
       this.aiOptimizer.setProgressCallback(null);
       
@@ -425,17 +445,17 @@ class SimpleBackgroundService {
       
       // Save updated report
       await this.storageManager.saveReport(report);
-      
-      sendResponse({ 
-        success: true, 
-        suggestions: optimizations 
+
+      sendResponse({
+        success: true,
+        suggestions: optimizations
       });
     } catch (error) {
       // Clear progress callback on error
       this.aiOptimizer.setProgressCallback(null);
-      
-      sendResponse({ 
-        error: error.message || '生成AI建议失败' 
+
+      sendResponse({
+        error: error.message || 'Failed to generate AI suggestions'
       });
     }
   }
@@ -445,7 +465,7 @@ class SimpleBackgroundService {
       const { tabId } = message;
       
       if (!tabId) {
-        throw new Error('缺少标签页ID');
+        throw new Error('Missing tab ID');
       }
 
       const progressInfo = this.analysisStatus.get(tabId);
@@ -467,7 +487,7 @@ class SimpleBackgroundService {
       }
     } catch (error) {
       sendResponse({
-        error: error.message || '获取AI进度失败'
+        error: error.message || 'Failed to get AI progress'
       });
     }
   }
@@ -480,9 +500,9 @@ class SimpleBackgroundService {
       url: report.url,
       timestamp: report.timestamp,
       metaTags: {
-        title: report.technicalResults?.metaTags?.hasTitle ? 
+        title: report.technicalResults?.metaTags?.hasTitle ?
           (report.technicalResults.metaTags.titleLength > 0 ? 'Current Title' : '') : '',
-        description: report.technicalResults?.metaTags?.hasDescription ? 
+        description: report.technicalResults?.metaTags?.hasDescription ?
           (report.technicalResults.metaTags.descriptionLength > 0 ? 'Current Description' : '') : ''
       },
       headings: {
@@ -513,92 +533,92 @@ class SimpleBackgroundService {
       const enhancedRules = new EnhancedSEORules();
       const score = enhancedRules.calculateEnhancedScore(analysis);
       const issues = enhancedRules.generateDetailedIssues(analysis);
-    
-    const report = {
-      id: this.generateReportId(),
-      url: analysis.url,
-      timestamp: new Date(analysis.timestamp),
-      score: score,
-      issues: issues,
-      suggestions: {
-        titleOptimization: '',
-        metaDescriptionSuggestion: '',
-        contentImprovements: [],
-        keywordSuggestions: [],
-        structureRecommendations: []
-      },
-      technicalResults: {
-        metaTags: {
-          hasTitle: !!analysis.metaTags?.title,
-          titleLength: analysis.metaTags?.title?.length || 0,
-          hasDescription: !!analysis.metaTags?.description,
-          descriptionLength: analysis.metaTags?.description?.length || 0,
-          hasKeywords: !!analysis.metaTags?.keywords,
-          hasOpenGraph: Object.keys(analysis.metaTags?.ogTags || {}).length > 0,
-          hasTwitterCards: Object.keys(analysis.metaTags?.twitterTags || {}).length > 0
+
+      const report = {
+        id: this.generateReportId(),
+        url: analysis.url,
+        timestamp: new Date(analysis.timestamp),
+        score: score,
+        issues: issues,
+        suggestions: {
+          titleOptimization: '',
+          metaDescriptionSuggestion: '',
+          contentImprovements: [],
+          keywordSuggestions: [],
+          structureRecommendations: []
         },
-        headingStructure: {
-          hasH1: (analysis.headings?.h1?.length || 0) > 0,
-          h1Count: analysis.headings?.h1?.length || 0,
-          headingHierarchy: true,
-          headingDistribution: {
-            h1: analysis.headings?.h1?.length || 0,
-            h2: analysis.headings?.h2?.length || 0,
-            h3: analysis.headings?.h3?.length || 0,
-            h4: analysis.headings?.h4?.length || 0,
-            h5: analysis.headings?.h5?.length || 0,
-            h6: analysis.headings?.h6?.length || 0
+        technicalResults: {
+          metaTags: {
+            hasTitle: !!analysis.metaTags?.title,
+            titleLength: analysis.metaTags?.title?.length || 0,
+            hasDescription: !!analysis.metaTags?.description,
+            descriptionLength: analysis.metaTags?.description?.length || 0,
+            hasKeywords: !!analysis.metaTags?.keywords,
+            hasOpenGraph: Object.keys(analysis.metaTags?.ogTags || {}).length > 0,
+            hasTwitterCards: Object.keys(analysis.metaTags?.twitterTags || {}).length > 0
+          },
+          headingStructure: {
+            hasH1: (analysis.headings?.h1?.length || 0) > 0,
+            h1Count: analysis.headings?.h1?.length || 0,
+            headingHierarchy: true,
+            headingDistribution: {
+              h1: analysis.headings?.h1?.length || 0,
+              h2: analysis.headings?.h2?.length || 0,
+              h3: analysis.headings?.h3?.length || 0,
+              h4: analysis.headings?.h4?.length || 0,
+              h5: analysis.headings?.h5?.length || 0,
+              h6: analysis.headings?.h6?.length || 0
+            }
+          },
+          internalLinks: {
+            internalLinksCount: analysis.content?.internalLinks || 0,
+            externalLinksCount: analysis.content?.externalLinks || 0,
+            brokenLinksCount: 0,
+            noFollowLinksCount: 0
+          },
+          canonicalUrl: {
+            hasCanonical: !!analysis.metaTags?.canonical,
+            canonicalUrl: analysis.metaTags?.canonical || undefined,
+            isValid: true
+          },
+          robotsTxt: {
+            hasRobotsMeta: !!analysis.metaTags?.robots,
+            robotsDirectives: analysis.metaTags?.robots ? [analysis.metaTags.robots] : [],
+            isIndexable: !analysis.metaTags?.robots?.includes('noindex')
           }
         },
-        internalLinks: {
-          internalLinksCount: analysis.content?.internalLinks || 0,
-          externalLinksCount: analysis.content?.externalLinks || 0,
-          brokenLinksCount: 0,
-          noFollowLinksCount: 0
+        contentResults: {
+          wordCount: analysis.content?.wordCount || 0,
+          readabilityScore: analysis.content?.readabilityScore || 0,
+          keywordDensity: analysis.content?.keywordDensity || {},
+          contentStructure: {
+            hasParagraphs: (analysis.content?.paragraphCount || 0) > 0,
+            hasLists: (analysis.content?.listCount || 0) > 0,
+            hasImages: (analysis.images?.totalImages || 0) > 0,
+            textToHtmlRatio: analysis.content?.textToHtmlRatio || 0
+          },
+          duplicateContent: {
+            hasDuplicateTitle: false,
+            hasDuplicateDescription: false,
+            duplicateContentPercentage: 0
+          }
         },
-        canonicalUrl: {
-          hasCanonical: !!analysis.metaTags?.canonical,
-          canonicalUrl: analysis.metaTags?.canonical || undefined,
-          isValid: true
-        },
-        robotsTxt: {
-          hasRobotsMeta: !!analysis.metaTags?.robots,
-          robotsDirectives: analysis.metaTags?.robots ? [analysis.metaTags.robots] : [],
-          isIndexable: !analysis.metaTags?.robots?.includes('noindex')
+        performanceResults: {
+          pageSize: analysis.performance?.pageSize || 0,
+          loadTime: analysis.performance?.loadTime || 0,
+          imageOptimization: {
+            totalImages: analysis.images?.totalImages || 0,
+            imagesWithoutAlt: analysis.images?.imagesWithoutAlt || 0,
+            oversizedImages: 0,
+            unoptimizedFormats: 0
+          },
+          coreWebVitals: {
+            lcp: 0,
+            fid: 0,
+            cls: 0
+          }
         }
-      },
-      contentResults: {
-        wordCount: analysis.content?.wordCount || 0,
-        readabilityScore: analysis.content?.readabilityScore || 0,
-        keywordDensity: analysis.content?.keywordDensity || {},
-        contentStructure: {
-          hasParagraphs: (analysis.content?.paragraphCount || 0) > 0,
-          hasLists: (analysis.content?.listCount || 0) > 0,
-          hasImages: (analysis.images?.totalImages || 0) > 0,
-          textToHtmlRatio: analysis.content?.textToHtmlRatio || 0
-        },
-        duplicateContent: {
-          hasDuplicateTitle: false,
-          hasDuplicateDescription: false,
-          duplicateContentPercentage: 0
-        }
-      },
-      performanceResults: {
-        pageSize: analysis.performance?.pageSize || 0,
-        loadTime: analysis.performance?.loadTime || 0,
-        imageOptimization: {
-          totalImages: analysis.images?.totalImages || 0,
-          imagesWithoutAlt: analysis.images?.imagesWithoutAlt || 0,
-          oversizedImages: 0,
-          unoptimizedFormats: 0
-        },
-        coreWebVitals: {
-          lcp: 0,
-          fid: 0,
-          cls: 0
-        }
-      }
-    };
+      };
 
       return report;
     } catch (error) {

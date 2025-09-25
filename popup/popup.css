@@ -102,6 +102,20 @@ body {
     gap: 4px;
 }
 
+#language-toggle {
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 32px;
+    color: #007bff;
+    border: 1px solid #007bff;
+    background: transparent;
+}
+
+#language-toggle:hover {
+    background: #007bff;
+    color: white;
+}
+
 .icon {
     font-size: 16px;
 }

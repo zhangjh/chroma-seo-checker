@@ -14,7 +14,7 @@
                 <h1>SEO Checker</h1>
             </div>
             <div class="actions">
-                <button id="refresh-btn" class="btn btn-icon" title="刷新分析">
+                <button id="refresh-btn" class="btn btn-icon" title="Refresh Analysis">
                     <span class="icon">🔄</span>
                 </button>
             </div>
@@ -24,7 +24,7 @@
         <div id="loading" class="loading hidden">
             <div class="spinner"></div>
             <div class="loading-content">
-                <p id="loading-message">正在分析页面SEO...</p>
+                <p id="loading-message">Analyzing page SEO...</p>
                 <div class="progress-container">
                     <div class="progress-bar">
                         <div id="progress-fill" class="progress-fill"></div>
@@ -32,8 +32,8 @@
                     <div id="progress-text" class="progress-text">0%</div>
                 </div>
                 <div id="progress-details" class="progress-details">
-                    <div id="current-step" class="current-step">准备开始分析...</div>
-                    <div id="step-counter" class="step-counter">第 0 步，共 5 步</div>
+                    <div id="current-step" class="current-step">Preparing to start analysis...</div>
+                    <div id="step-counter" class="step-counter">Step 0 of 5</div>
                 </div>
             </div>
         </div>
@@ -41,9 +41,9 @@
         <!-- Error State -->
         <div id="error" class="error hidden">
             <div class="error-icon">⚠️</div>
-            <h3>分析失败</h3>
-            <p id="error-message">无法分析当前页面，请刷新后重试</p>
-            <button id="retry-btn" class="btn btn-primary">重试</button>
+            <h3>Analysis Failed</h3>
+            <p id="error-message">Unable to analyze current page, please refresh and try again</p>
+            <button id="retry-btn" class="btn btn-primary">Retry</button>
         </div>
 
         <!-- Main Content -->
@@ -52,25 +52,25 @@
             <section class="score-section">
                 <div class="score-circle">
                     <div class="score-value" id="overall-score">--</div>
-                    <div class="score-label">总分</div>
+                    <div class="score-label">Overall</div>
                 </div>
                 <div class="score-breakdown">
                     <div class="score-item">
-                        <span class="score-category">技术SEO</span>
+                        <span class="score-category">Technical SEO</span>
                         <span class="score-bar">
                             <span class="score-fill technical" id="technical-fill"></span>
                         </span>
                         <span class="score-number" id="technical-score">--</span>
                     </div>
                     <div class="score-item">
-                        <span class="score-category">内容质量</span>
+                        <span class="score-category">Content Quality</span>
                         <span class="score-bar">
                             <span class="score-fill content" id="content-fill"></span>
                         </span>
                         <span class="score-number" id="content-score">--</span>
                     </div>
                     <div class="score-item">
-                        <span class="score-category">性能优化</span>
+                        <span class="score-category">Performance</span>
                         <span class="score-bar">
                             <span class="score-fill performance" id="performance-fill"></span>
                         </span>
@@ -84,15 +84,15 @@
                 <div class="summary-stats">
                     <div class="stat-item critical">
                         <span class="stat-number" id="critical-issues">0</span>
-                        <span class="stat-label">严重问题</span>
+                        <span class="stat-label">Critical</span>
                     </div>
                     <div class="stat-item high">
                         <span class="stat-number" id="high-issues">0</span>
-                        <span class="stat-label">高优先级</span>
+                        <span class="stat-label">High Priority</span>
                     </div>
                     <div class="stat-item total">
                         <span class="stat-number" id="total-issues">0</span>
-                        <span class="stat-label">总问题</span>
+                        <span class="stat-label">Total Issues</span>
                     </div>
                 </div>
             </section>
@@ -100,11 +100,11 @@
             <!-- Issues List -->
             <section class="issues-section">
                 <div class="section-header">
-                    <h3>主要问题</h3>
+                    <h3>Main Issues</h3>
                     <div class="filter-tabs">
-                        <button class="tab-btn active" data-filter="all">全部</button>
-                        <button class="tab-btn" data-filter="critical">严重</button>
-                        <button class="tab-btn" data-filter="high">高优先级</button>
+                        <button class="tab-btn active" data-filter="all">All</button>
+                        <button class="tab-btn" data-filter="critical">Critical</button>
+                        <button class="tab-btn" data-filter="high">High Priority</button>
                     </div>
                 </div>
                 <div id="issues-list" class="issues-list">
@@ -112,37 +112,37 @@
                 </div>
                 <div id="no-issues" class="no-issues hidden">
                     <div class="success-icon">✅</div>
-                    <p>太棒了！没有发现严重的SEO问题</p>
+                    <p>Great! No serious SEO issues found</p>
                 </div>
             </section>
 
             <!-- AI Suggestions -->
             <section class="suggestions-section">
                 <div class="section-header">
-                    <h3>AI优化建议</h3>
-                    <button id="generate-suggestions" class="btn btn-secondary btn-sm">生成建议</button>
+                    <h3>AI Optimization Suggestions</h3>
+                    <button id="generate-suggestions" class="btn btn-secondary btn-sm">Generate Suggestions</button>
                 </div>
                 <div id="suggestions-status" class="suggestions-status hidden">
                     <span class="status-icon">ℹ️</span>
-                    <span id="suggestions-status-text">正在生成AI建议...</span>
+                    <span id="suggestions-status-text">Generating AI suggestions...</span>
                 </div>
                 <div id="suggestions-content" class="suggestions-content">
                     <div id="suggestions-loading" class="suggestions-loading hidden">
                         <div class="spinner-sm"></div>
-                        <span>AI正在分析...</span>
+                        <span>AI is analyzing...</span>
                     </div>
                     <div id="suggestions-list" class="suggestions-list">
                         <!-- AI suggestions will be populated dynamically -->
                     </div>
                     <div id="no-suggestions" class="no-suggestions">
-                        <p>点击"生成建议"获取AI优化建议</p>
+                        <p>Click "Generate Suggestions" to get AI optimization suggestions</p>
                     </div>
                 </div>
             </section>
 
             <!-- Action Buttons -->
             <section class="actions-section">
-                <button id="detailed-report-btn" class="btn btn-primary btn-full">查看详细报告</button>
+                <button id="detailed-report-btn" class="btn btn-primary btn-full">View Detailed Report</button>
             </section>
         </main>
     </div>

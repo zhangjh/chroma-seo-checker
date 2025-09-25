@@ -1,4 +1,4 @@
-// Enhanced SEO Rules Engine - With Debug Logging
+// Enhanced SEO Rules Engine - English Only Version
 class EnhancedSEORules {
   constructor() {
     this.rules = this.initializeRules();
@@ -18,14 +18,14 @@ class EnhancedSEORules {
       technical: [
         {
           id: 'title_exists',
-          name: '页面标题缺失',
+          name: 'Missing Page Title',
           weight: 15,
           check: (analysis) => !!analysis.metaTags?.title,
           severity: 'critical'
         },
         {
           id: 'title_length',
-          name: '标题长度不合适',
+          name: 'Inappropriate Title Length',
           weight: 10,
           check: (analysis) => {
             const title = analysis.metaTags?.title || '';
@@ -35,21 +35,21 @@ class EnhancedSEORules {
         },
         {
           id: 'meta_description_exists',
-          name: 'Meta描述缺失',
+          name: 'Missing Meta Description',
           weight: 12,
           check: (analysis) => !!analysis.metaTags?.description,
           severity: 'critical'
         },
         {
           id: 'h1_exists',
-          name: 'H1标题缺失',
+          name: 'Missing H1 Title',
           weight: 12,
           check: (analysis) => (analysis.headings?.h1?.length || 0) > 0,
           severity: 'critical'
         },
         {
           id: 'images_alt',
-          name: '图片缺少Alt属性',
+          name: 'Images Missing Alt Attributes',
           weight: 8,
           check: (analysis) => {
             const total = analysis.images?.totalImages || 0;
@@ -60,7 +60,7 @@ class EnhancedSEORules {
         },
         {
           id: 'meta_description_length',
-          name: 'Meta描述长度不合适',
+          name: 'Inappropriate Meta Description Length',
           weight: 8,
           check: (analysis) => {
             const desc = analysis.metaTags?.description || '';
@@ -70,42 +70,42 @@ class EnhancedSEORules {
         },
         {
           id: 'h1_unique',
-          name: 'H1标题不唯一',
+          name: 'Non-unique H1 Title',
           weight: 8,
           check: (analysis) => (analysis.headings?.h1?.length || 0) === 1,
           severity: 'high'
         },
         {
           id: 'canonical_url',
-          name: '缺少Canonical标签',
+          name: 'Missing Canonical Tag',
           weight: 5,
           check: (analysis) => !!analysis.metaTags?.canonical,
           severity: 'medium'
         },
         {
           id: 'mobile_friendly',
-          name: '移动端不友好',
+          name: 'Not Mobile Friendly',
           weight: 6,
           check: (analysis) => !!analysis.metaTags?.viewport,
           severity: 'high'
         },
         {
           id: 'open_graph',
-          name: '缺少Open Graph标签',
+          name: 'Missing Open Graph Tags',
           weight: 6,
           check: (analysis) => Object.keys(analysis.metaTags?.ogTags || {}).length > 0,
           severity: 'medium'
         },
         {
           id: 'robots_meta',
-          name: '缺少Robots Meta标签',
+          name: 'Missing Robots Meta Tag',
           weight: 4,
           check: (analysis) => !!analysis.metaTags?.robots,
           severity: 'low'
         },
         {
           id: 'lang_attribute',
-          name: 'HTML缺少lang属性',
+          name: 'HTML Missing lang Attribute',
           weight: 4,
           check: (analysis) => !!analysis.technical?.hasLang,
           severity: 'medium'
@@ -114,28 +114,28 @@ class EnhancedSEORules {
       content: [
         {
           id: 'content_length',
-          name: '内容长度不足',
+          name: 'Insufficient Content Length',
           weight: 20,
           check: (analysis) => (analysis.content?.wordCount || 0) >= 300,
           severity: 'high'
         },
         {
           id: 'text_html_ratio',
-          name: '文本HTML比例过低',
+          name: 'Low Text-to-HTML Ratio',
           weight: 12,
           check: (analysis) => (analysis.content?.textToHtmlRatio || 0) >= 15,
           severity: 'medium'
         },
         {
           id: 'internal_links',
-          name: '内链数量不足',
+          name: 'Insufficient Internal Links',
           weight: 10,
           check: (analysis) => (analysis.content?.internalLinks || 0) >= 3,
           severity: 'medium'
         },
         {
           id: 'heading_structure',
-          name: '标题结构不合理',
+          name: 'Unreasonable Heading Structure',
           weight: 8,
           check: (analysis) => {
             const h1Count = analysis.headings?.h1?.length || 0;
@@ -146,7 +146,7 @@ class EnhancedSEORules {
         },
         {
           id: 'external_links',
-          name: '外链数量不合理',
+          name: 'Unreasonable External Links Count',
           weight: 8,
           check: (analysis) => {
             const externalLinks = analysis.content?.externalLinks || 0;
@@ -156,7 +156,7 @@ class EnhancedSEORules {
         },
         {
           id: 'keyword_density',
-          name: '关键词密度异常',
+          name: 'Abnormal Keyword Density',
           weight: 10,
           check: (analysis) => {
             const density = analysis.content?.keywordDensity || {};
@@ -169,28 +169,28 @@ class EnhancedSEORules {
       performance: [
         {
           id: 'page_size',
-          name: '页面大小过大',
+          name: 'Page Size Too Large',
           weight: 25,
           check: (analysis) => (analysis.performance?.pageSize || 0) < 2000000,
           severity: 'medium'
         },
         {
           id: 'load_time',
-          name: '页面加载时间过长',
+          name: 'Page Load Time Too Long',
           weight: 30,
-          check: (analysis) => (analysis.performance?.loadTime || 0) < 3, // 3秒
+          check: (analysis) => (analysis.performance?.loadTime || 0) < 3,
           severity: 'high'
         },
         {
           id: 'https_usage',
-          name: '未使用HTTPS',
+          name: 'Not Using HTTPS',
           weight: 15,
           check: (analysis) => analysis.url?.startsWith('https://'),
           severity: 'high'
         },
         {
           id: 'image_optimization',
-          name: '图片优化不足',
+          name: 'Insufficient Image Optimization',
           weight: 20,
           check: (analysis) => {
             const total = analysis.images?.totalImages || 0;
@@ -269,7 +269,7 @@ class EnhancedSEORules {
               issues.push(issue);
             }
           } catch (error) {
-            // 静默跳过有问题的规则
+            // Silent skip problematic rules
           }
         });
       });
@@ -288,111 +288,103 @@ class EnhancedSEORules {
 
   getIssueDescription(ruleId, analysis) {
     const descriptions = {
-      'title_exists': '页面缺少title标签',
-      'title_length': `页面标题长度为${analysis.metaTags?.titleLength || 0}字符`,
-      'meta_description_exists': '页面缺少Meta描述标签',
-      'meta_description_length': `Meta描述长度为${analysis.metaTags?.descriptionLength || 0}字符`,
-      'h1_exists': '页面缺少H1主标题',
-      'h1_unique': `页面有${analysis.headings?.h1?.length || 0}个H1标题`,
-      'canonical_url': '页面缺少Canonical标签',
-      'mobile_friendly': '页面对移动设备不够友好',
-      'images_alt': `${analysis.images?.imagesWithoutAlt || 0}张图片缺少Alt属性`,
-      'content_length': `页面内容仅${analysis.content?.wordCount || 0}字`,
-      'text_html_ratio': `文本HTML比例仅${analysis.content?.textToHtmlRatio || 0}%`,
-      'internal_links': `页面仅有${analysis.content?.internalLinks || 0}个内链`,
-      'heading_structure': '标题层次结构不合理',
-      'page_size': `页面大小为${Math.round((analysis.performance?.pageSize || 0) / 1024)}KB`,
-      'load_time': `页面加载时间${Math.round(analysis.performance?.loadTime || 0)}秒`,
-      'https_usage': '网站未使用HTTPS协议',
-      'image_optimization': '图片优化不足',
-      'open_graph': '页面缺少Open Graph标签',
-      'robots_meta': '页面缺少Robots Meta标签',
-      'lang_attribute': 'HTML标签缺少lang属性',
-      'external_links': `外链数量为${analysis.content?.externalLinks || 0}个`,
-      'keyword_density': '检测到可能的关键词堆砌'
+      'title_exists': 'Page is missing title tag',
+      'title_length': `Page title length is ${analysis.metaTags?.title?.length || 0} characters`,
+      'meta_description_exists': 'Page is missing Meta description tag',
+      'meta_description_length': `Meta description length is ${analysis.metaTags?.description?.length || 0} characters`,
+      'h1_exists': 'Page is missing H1 main title',
+      'h1_unique': `Page has ${analysis.headings?.h1?.length || 0} H1 titles`,
+      'canonical_url': 'Page is missing Canonical tag',
+      'mobile_friendly': 'Page is not mobile-friendly enough',
+      'images_alt': `${analysis.images?.imagesWithoutAlt || 0} images are missing Alt attributes`,
+      'content_length': `Page content is only ${analysis.content?.wordCount || 0} words`,
+      'text_html_ratio': `Text-to-HTML ratio is only ${analysis.content?.textToHtmlRatio || 0}%`,
+      'internal_links': `Page has only ${analysis.content?.internalLinks || 0} internal links`,
+      'heading_structure': 'Heading hierarchy structure is unreasonable',
+      'page_size': `Page size is ${Math.round((analysis.performance?.pageSize || 0) / 1024)}KB`,
+      'load_time': `Page load time is ${Math.round(analysis.performance?.loadTime || 0)} seconds`,
+      'https_usage': 'Website is not using HTTPS protocol',
+      'image_optimization': 'Image optimization is insufficient',
+      'open_graph': 'Page is missing Open Graph tags',
+      'robots_meta': 'Page is missing Robots Meta tag',
+      'lang_attribute': 'HTML tag is missing lang attribute',
+      'external_links': `External links count is ${analysis.content?.externalLinks || 0}`,
+      'keyword_density': 'Possible keyword stuffing detected'
     };
-    return descriptions[ruleId] || '需要关注的SEO问题';
+    
+    return descriptions[ruleId] || 'SEO issue that needs attention';
   }
 
   getRecommendation(ruleId) {
     const recommendations = {
-      'title_exists': '添加<title>标签：<title>页面标题 - 网站名</title>',
-      'title_length': '调整标题长度至30-60字符，确保在搜索结果中完整显示',
-      'meta_description_exists': '添加Meta描述：<meta name="description" content="120-160字符的页面描述">',
-      'meta_description_length': '调整Meta描述长度至120-160字符',
-      'h1_exists': '添加H1标题：<h1>页面主标题</h1>',
-      'h1_unique': '确保页面只有一个H1标题，其他改为H2或H3',
-      'canonical_url': '添加Canonical标签：<link rel="canonical" href="页面URL">',
-      'mobile_friendly': '添加viewport标签：<meta name="viewport" content="width=device-width, initial-scale=1">',
-      'images_alt': '为图片添加Alt属性：<img src="..." alt="图片描述">',
-      'content_length': '增加页面内容至300字以上，提供更多有价值信息',
-      'text_html_ratio': '增加文本内容，减少不必要的HTML代码',
-      'internal_links': '添加3-5个相关内链，提升页面权重',
-      'heading_structure': '建立清晰的标题层次：H1→H2→H3',
-      'page_size': '压缩图片和代码，减少页面大小至2MB以下',
-      'load_time': '优化图片、压缩代码、使用CDN提升加载速度',
-      'https_usage': '启用SSL证书，使用HTTPS协议',
-      'image_optimization': '压缩图片、使用现代格式、添加alt属性',
-      'open_graph': '添加Open Graph标签：<meta property="og:title" content="页面标题">',
-      'robots_meta': '添加robots标签：<meta name="robots" content="index,follow">',
-      'lang_attribute': '为HTML标签添加语言属性：<html lang="zh-CN">',
-      'external_links': '适量添加1-5个高质量外链',
-      'keyword_density': '减少关键词重复，使用同义词和相关词'
+      'title_exists': 'Add <title> tag: <title>Page Title - Site Name</title>',
+      'title_length': 'Adjust title length to 30-60 characters to ensure complete display in search results',
+      'meta_description_exists': 'Add Meta description: <meta name="description" content="120-160 character page description">',
+      'meta_description_length': 'Adjust Meta description length to 120-160 characters',
+      'h1_exists': 'Add H1 title: <h1>Page Main Title</h1>',
+      'h1_unique': 'Ensure page has only one H1 title, change others to H2 or H3',
+      'canonical_url': 'Add Canonical tag: <link rel="canonical" href="Page URL">',
+      'mobile_friendly': 'Add viewport tag: <meta name="viewport" content="width=device-width, initial-scale=1">',
+      'images_alt': 'Add Alt attributes to images: <img src="..." alt="Image description">',
+      'content_length': 'Increase page content to over 300 words, provide more valuable information',
+      'text_html_ratio': 'Increase text content, reduce unnecessary HTML code',
+      'internal_links': 'Add 3-5 relevant internal links to boost page authority',
+      'heading_structure': 'Establish clear heading hierarchy: H1→H2→H3',
+      'page_size': 'Compress images and code, reduce page size to under 2MB',
+      'load_time': 'Optimize images, compress code, use CDN to improve loading speed',
+      'https_usage': 'Enable SSL certificate, use HTTPS protocol',
+      'image_optimization': 'Compress images, use modern formats, add alt attributes',
+      'open_graph': 'Add Open Graph tags: <meta property="og:title" content="Page Title">',
+      'robots_meta': 'Add robots tag: <meta name="robots" content="index,follow">',
+      'lang_attribute': 'Add language attribute to HTML tag: <html lang="en">',
+      'external_links': 'Add 1-5 high-quality external links appropriately',
+      'keyword_density': 'Reduce keyword repetition, use synonyms and related words'
     };
-    return recommendations[ruleId] || '请参考SEO最佳实践';
+    
+    return recommendations[ruleId] || 'Meets SEO standards';
   }
 
   getIssueLocation(ruleId) {
     const locations = {
-      'title_exists': '<head>部分',
-      'title_length': '<title>标签',
-      'meta_description_exists': '<head>部分',
-      'h1_exists': '页面内容区域',
-      'images_alt': '页面图片',
-      'content_length': '页面主要内容',
-      'page_size': '整个页面'
+      'title_exists': '<head> section',
+      'title_length': '<title> tag',
+      'meta_description_exists': '<head> section',
+      'h1_exists': 'Page content area',
+      'images_alt': 'Page images',
+      'content_length': 'Main page content',
+      'page_size': 'Entire page'
     };
-    return locations[ruleId] || '页面中';
+    
+    return locations[ruleId] || 'In page';
   }
 
   getCurrentValue(ruleId, analysis) {
-    const values = {
-      'title_exists': '无标题',
-      'title_length': `${analysis.metaTags?.titleLength || 0}字符`,
-      'meta_description_exists': '无描述',
-      'meta_description_length': `${analysis.metaTags?.descriptionLength || 0}字符`,
-      'h1_exists': '无H1标题',
-      'h1_unique': `${analysis.headings?.h1?.length || 0}个H1`,
-      'canonical_url': '无Canonical标签',
-      'mobile_friendly': analysis.metaTags?.viewport || '无viewport设置',
-      'images_alt': `${analysis.images?.imagesWithoutAlt || 0}张缺少Alt`,
-      'content_length': `${analysis.content?.wordCount || 0}字`,
+    const currentValues = {
+      'title_exists': 'No title',
+      'title_length': `${analysis.metaTags?.title?.length || 0} characters`,
+      'meta_description_exists': 'No description',
+      'meta_description_length': `${analysis.metaTags?.description?.length || 0} characters`,
+      'h1_exists': 'No H1 title',
+      'h1_unique': `${analysis.headings?.h1?.length || 0} H1s`,
+      'canonical_url': 'No Canonical tag',
+      'mobile_friendly': analysis.metaTags?.viewport || 'No viewport setting',
+      'images_alt': `${analysis.images?.imagesWithoutAlt || 0} missing Alt`,
+      'content_length': `${analysis.content?.wordCount || 0} words`,
       'text_html_ratio': `${analysis.content?.textToHtmlRatio || 0}%`,
-      'internal_links': `${analysis.content?.internalLinks || 0}个内链`,
-      'heading_structure': this.getHeadingStructureInfo(analysis.headings),
+      'internal_links': `${analysis.content?.internalLinks || 0} internal links`,
+      'heading_structure': 'Heading structure info',
       'page_size': `${Math.round((analysis.performance?.pageSize || 0) / 1024)}KB`,
-      'load_time': `${Math.round(analysis.performance?.loadTime || 0)}秒`,
-      'https_usage': 'HTTP协议',
-      'image_optimization': `${analysis.images?.totalImages || 0}张图片需优化`,
-      'open_graph': '无OG标签',
-      'robots_meta': '无Robots指令',
-      'lang_attribute': '无lang属性',
-      'external_links': `${analysis.content?.externalLinks || 0}个外链`,
-      'keyword_density': this.getKeywordDensityInfo(analysis)
+      'load_time': `${Math.round(analysis.performance?.loadTime || 0)} seconds`,
+      'https_usage': 'HTTP protocol',
+      'image_optimization': `${analysis.images?.totalImages || 0} images need optimization`,
+      'open_graph': 'No OG tags',
+      'robots_meta': 'No Robots directive',
+      'lang_attribute': 'No lang attribute',
+      'external_links': `${analysis.content?.externalLinks || 0} external links`,
+      'keyword_density': 'Keyword density info'
     };
-    return values[ruleId] || '未知';
-  }
-
-  getHeadingStructureInfo(headings) {
-    if (!headings) return '无标题结构';
-    const structure = [];
-    ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].forEach(level => {
-      const count = headings[level]?.length || 0;
-      if (count > 0) {
-        structure.push(`${level.toUpperCase()}:${count}个`);
-      }
-    });
-    return structure.join(', ') || '无标题';
+    
+    return currentValues[ruleId] || 'Unknown';
   }
 
   getSelector(ruleId) {
@@ -425,55 +417,50 @@ class EnhancedSEORules {
   }
 
   getExpectedValue(ruleId) {
-    const values = {
-      'title_exists': '30-60字符标题',
-      'title_length': '30-60字符',
-      'meta_description_exists': '120-160字符描述',
-      'h1_exists': '1个H1标题',
-      'images_alt': '所有图片有Alt',
-      'content_length': '至少300字',
-      'page_size': '小于2MB'
+    const expectedValues = {
+      'title_exists': '30-60 character title',
+      'title_length': '30-60 characters',
+      'meta_description_exists': '120-160 character description',
+      'h1_exists': '1 H1 title',
+      'images_alt': 'All images have Alt',
+      'content_length': 'At least 300 words',
+      'page_size': 'Less than 2MB'
     };
-    return values[ruleId] || '符合SEO标准';
+    
+    return expectedValues[ruleId] || 'Meets SEO standards';
   }
 
   getImpact(ruleId) {
     const impacts = {
-      'title_exists': '严重影响搜索排名',
-      'title_length': '影响搜索结果显示',
-      'meta_description_exists': '影响点击率',
-      'meta_description_length': '描述过长会被截断，过短则不够吸引人',
-      'h1_exists': '影响内容结构',
-      'h1_unique': '多个H1会分散页面主题焦点',
-      'canonical_url': '可能出现重复内容问题',
-      'mobile_friendly': '影响移动端用户体验和排名',
-      'open_graph': '影响社交媒体分享效果',
-      'robots_meta': '无法精确控制搜索引擎行为',
-      'lang_attribute': '影响搜索引擎理解页面语言',
-      'images_alt': '影响可访问性',
-      'content_length': '影响搜索排名',
-      'text_html_ratio': '影响内容质量评估',
-      'internal_links': '影响网站内部权重传递',
-      'heading_structure': '影响内容可读性和SEO效果',
-      'external_links': '影响页面权威性评估',
-      'keyword_density': '可能被搜索引擎降权处理',
-      'page_size': '影响加载速度',
-      'load_time': '影响用户体验和搜索排名',
-      'https_usage': '影响网站安全性和搜索排名',
-      'image_optimization': '影响页面加载速度'
+      'title_exists': 'Seriously affects search ranking',
+      'title_length': 'Affects search result display',
+      'meta_description_exists': 'Affects click-through rate',
+      'meta_description_length': 'Too long descriptions get truncated, too short ones are not attractive enough',
+      'h1_exists': 'Affects content structure',
+      'h1_unique': 'Multiple H1s scatter page theme focus',
+      'canonical_url': 'May cause duplicate content issues',
+      'mobile_friendly': 'Affects mobile user experience and ranking',
+      'open_graph': 'Affects social media sharing effectiveness',
+      'robots_meta': 'Cannot precisely control search engine behavior',
+      'lang_attribute': 'Affects search engine understanding of page language',
+      'images_alt': 'Affects accessibility',
+      'content_length': 'Affects search ranking',
+      'text_html_ratio': 'Affects content quality assessment',
+      'internal_links': 'Affects internal site authority transfer',
+      'heading_structure': 'Affects content readability and SEO effectiveness',
+      'external_links': 'Affects page authority assessment',
+      'keyword_density': 'May be penalized by search engines',
+      'page_size': 'Affects loading speed',
+      'load_time': 'Affects user experience and search ranking',
+      'https_usage': 'Affects website security and search ranking',
+      'image_optimization': 'Affects page loading speed'
     };
-    return impacts[ruleId] || '可能影响SEO效果';
-  }
-
-  getKeywordDensityInfo(analysis) {
-    const density = analysis.content?.keywordDensity || {};
-    const entries = Object.entries(density).sort(([,a], [,b]) => b - a);
-    const top3 = entries.slice(0, 3).map(([word, freq]) => `${word}:${freq}%`);
-    return top3.join(', ') || '无明显关键词';
+    
+    return impacts[ruleId] || 'May affect SEO performance';
   }
 }
 
-// 导出
+// Export
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = EnhancedSEORules;
 } else if (typeof window !== 'undefined') {

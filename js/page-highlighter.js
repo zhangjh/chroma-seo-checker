@@ -1,22 +1,22 @@
-// Page Highlighter - 在页面上直接标记SEO问题
+// Page Highlighter - English Only Version
 class PageHighlighter {
   constructor() {
     this.highlightedElements = [];
     this.overlayId = 'seo-checker-overlay';
   }
 
-  // 高亮显示问题元素
+  // Highlight issue elements
   highlightIssues(issues) {
     this.clearHighlights();
     
     issues.forEach((issue, index) => {
-      // 使用原始索引，如果没有则使用当前索引
+      // Use original index if available, otherwise use current index
       const issueIndex = issue.originalIndex !== undefined ? issue.originalIndex : index;
       
       if (issue.selector) {
         this.highlightElementsBySelector(issue.selector, issue.severity, issueIndex, issue.title);
       } else {
-        // 对于没有selector的问题，也要添加到highlightedElements中
+        // For issues without selector, also add to highlightedElements
         this.highlightedElements.push({
           element: null,
           issueIndex: issueIndex,
@@ -29,13 +29,13 @@ class PageHighlighter {
     });
   }
 
-  // 根据选择器高亮元素
+  // Highlight elements by selector
   highlightElementsBySelector(selector, severity, issueIndex, title) {
     try {
       const elements = document.querySelectorAll(selector);
       
       if (elements.length === 0) {
-        // 如果没找到元素，显示一个通知
+        // If no elements found, show notification
         this.showNotFoundNotification(title, selector, issueIndex);
       } else {
         elements.forEach((element, elementIndex) => {
@@ -47,9 +47,9 @@ class PageHighlighter {
     }
   }
 
-  // 显示未找到元素的通知
+  // Show notification for elements not found
   showNotFoundNotification(title, selector, issueIndex) {
-    // 先移除现有的同类通知
+    // Remove existing notifications of the same type
     const existingNotifications = document.querySelectorAll('.seo-not-found-notification');
     existingNotifications.forEach(notification => notification.remove());
     
@@ -75,9 +75,9 @@ class PageHighlighter {
     notification.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: flex-start;">
         <div>
-          <div style="font-weight: bold; margin-bottom: 4px;">⚠️ 元素缺失</div>
+          <div style="font-weight: bold; margin-bottom: 4px;">⚠️ Element Missing</div>
           <div style="font-size: 12px; opacity: 0.9;">${title}</div>
-          <div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">这正是需要修复的问题</div>
+          <div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">This is exactly the issue that needs to be fixed</div>
         </div>
         <div style="font-size: 16px; line-height: 1; margin-left: 8px;" onclick="this.parentElement.parentElement.remove()">×</div>
       </div>
@@ -85,19 +85,19 @@ class PageHighlighter {
     
     document.body.appendChild(notification);
     
-    // 点击通知关闭
+    // Click notification to close
     notification.addEventListener('click', () => {
       notification.remove();
     });
     
-    // 5秒后自动移除
+    // Auto remove after 5 seconds
     setTimeout(() => {
       if (notification.parentNode) {
         notification.remove();
       }
     }, 5000);
     
-    // 存储到highlightedElements中，使用正确的issueIndex
+    // Store in highlightedElements with correct issueIndex
     this.highlightedElements.push({
       element: null,
       issueIndex: issueIndex,
@@ -108,7 +108,7 @@ class PageHighlighter {
     });
   }
 
-  // 为单个元素添加高亮
+  // Add highlight for single element
   addHighlight(element, severity, issueIndex, elementIndex, title) {
     const rect = element.getBoundingClientRect();
     const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
@@ -130,7 +130,7 @@ class PageHighlighter {
       box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8), 0 0 12px rgba(0, 0, 0, 0.4);
     `;
 
-    // 添加问题标签
+    // Add issue label
     const label = document.createElement('div');
     label.className = 'seo-highlight-label';
     label.textContent = `${issueIndex + 1}`;
@@ -160,7 +160,7 @@ class PageHighlighter {
       targetElement: element
     });
 
-    // 添加点击事件显示详情
+    // Add click event to show details
     label.style.pointerEvents = 'auto';
     label.style.cursor = 'pointer';
     label.addEventListener('click', () => {
@@ -168,9 +168,9 @@ class PageHighlighter {
     });
   }
 
-  // 显示问题提示
+  // Show issue tooltip
   showIssueTooltip(highlight, title, element) {
-    // 移除现有提示
+    // Remove existing tooltip
     const existingTooltip = document.querySelector('.seo-tooltip');
     if (existingTooltip) {
       existingTooltip.remove();
@@ -184,7 +184,7 @@ class PageHighlighter {
         <div style="cursor: pointer; color: #ccc; font-size: 16px; line-height: 1; margin-left: 8px;" onclick="this.parentElement.parentElement.remove()">×</div>
       </div>
       <div class="seo-tooltip-element">${element.tagName.toLowerCase()}</div>
-      <div class="seo-tooltip-text">${element.textContent?.substring(0, 100) || '无文本内容'}...</div>
+      <div class="seo-tooltip-text">${element.textContent?.substring(0, 100) || 'No text content'}...</div>
     `;
     
     tooltip.style.cssText = `
@@ -203,30 +203,30 @@ class PageHighlighter {
 
     document.body.appendChild(tooltip);
 
-    // 获取高亮元素在视口中的位置
+    // Get highlight element position in viewport
     const rect = highlight.getBoundingClientRect();
     const tooltipRect = tooltip.getBoundingClientRect();
     
-    // 计算最佳位置
+    // Calculate best position
     let top = rect.top - tooltipRect.height - 10;
     let left = rect.left;
     
-    // 如果上方空间不够，显示在下方
+    // If not enough space above, show below
     if (top < 10) {
       top = rect.bottom + 10;
     }
     
-    // 如果右侧空间不够，调整到左侧
+    // If not enough space on right, adjust to left
     if (left + tooltipRect.width > window.innerWidth - 10) {
       left = window.innerWidth - tooltipRect.width - 10;
     }
     
-    // 确保不超出左边界
+    // Ensure not beyond left boundary
     if (left < 10) {
       left = 10;
     }
     
-    // 确保不超出下边界
+    // Ensure not beyond bottom boundary
     if (top + tooltipRect.height > window.innerHeight - 10) {
       top = window.innerHeight - tooltipRect.height - 10;
     }
@@ -234,7 +234,7 @@ class PageHighlighter {
     tooltip.style.top = top + 'px';
     tooltip.style.left = left + 'px';
 
-    // 5秒后自动移除
+    // Auto remove after 5 seconds
     setTimeout(() => {
       if (tooltip.parentNode) {
         tooltip.remove();
@@ -242,7 +242,7 @@ class PageHighlighter {
     }, 5000);
   }
 
-  // 获取严重程度对应的颜色
+  // Get severity corresponding color
   getSeverityColor(severity) {
     const colors = {
       critical: '#dc3545',
@@ -253,7 +253,7 @@ class PageHighlighter {
     return colors[severity] || '#6c757d';
   }
 
-  // 清除所有高亮
+  // Clear all highlights
   clearHighlights() {
     this.highlightedElements.forEach(item => {
       if (item.element && item.element.parentNode) {
@@ -262,18 +262,18 @@ class PageHighlighter {
     });
     this.highlightedElements = [];
 
-    // 清除提示
+    // Clear tooltips
     const tooltips = document.querySelectorAll('.seo-tooltip');
     tooltips.forEach(tooltip => tooltip.remove());
     
-    // 清除未找到通知
+    // Clear not found notifications
     const notifications = document.querySelectorAll('.seo-not-found-notification');
     notifications.forEach(notification => notification.remove());
   }
 
-  // 滚动到指定问题
+  // Scroll to specified issue
   scrollToIssue(issueIndex) {
-    // 查找匹配的高亮项
+    // Find matching highlight item
     const highlightItem = this.highlightedElements.find(item => item.issueIndex === issueIndex);
     
     if (highlightItem) {
@@ -283,18 +283,18 @@ class PageHighlighter {
           block: 'center' 
         });
         
-        // 显示问题详情
+        // Show issue details
         setTimeout(() => {
           this.showIssueTooltip(highlightItem.element, highlightItem.title, highlightItem.targetElement);
         }, 500);
       } else if (highlightItem.isNotFound) {
-        // 对于元素缺失的问题，重新显示通知
+        // For missing element issues, re-show notification
         this.showNotFoundNotification(highlightItem.title, '', issueIndex);
       } else {
         this.showScrollNotification(issueIndex);
       }
     } else {
-      // 降级方案：使用数组索引
+      // Fallback: use array index
       const fallbackItem = this.highlightedElements[issueIndex];
       if (fallbackItem) {
         if (fallbackItem.element) {
@@ -314,7 +314,7 @@ class PageHighlighter {
     }
   }
 
-  // 显示滚动通知
+  // Show scroll notification
   showScrollNotification(issueIndex) {
     const notification = document.createElement('div');
     notification.className = 'seo-scroll-notification';
@@ -335,13 +335,13 @@ class PageHighlighter {
     `;
     
     notification.innerHTML = `
-      <div style="font-weight: bold; margin-bottom: 4px;">问题 #${issueIndex + 1}</div>
-      <div style="font-size: 12px;">该问题对应的页面元素不存在或无法定位</div>
+      <div style="font-weight: bold; margin-bottom: 4px;">Issue #${issueIndex + 1}</div>
+      <div style="font-size: 12px;">The element for this issue does not exist or cannot be located</div>
     `;
     
     document.body.appendChild(notification);
     
-    // 2秒后自动移除
+    // Auto remove after 2 seconds
     setTimeout(() => {
       if (notification.parentNode) {
         notification.remove();
@@ -349,7 +349,7 @@ class PageHighlighter {
     }, 2000);
   }
 
-  // 添加CSS样式
+  // Add CSS styles
   injectStyles() {
     if (document.querySelector('#seo-checker-styles')) return;
 
@@ -405,7 +405,7 @@ class PageHighlighter {
   }
 }
 
-// 导出
+// Export
 if (typeof window !== 'undefined') {
   window.PageHighlighter = PageHighlighter;
 }
