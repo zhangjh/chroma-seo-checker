@@ -32,15 +32,6 @@ class AIContentOptimizer {
             if (availability === 'downloadable') {
                 console.log('[AI Optimizer] 模型需要下载，开始下载过程...');
 
-                // 通知开始下载
-                if (this.progressCallback) {
-                    this.progressCallback({
-                        type: 'download_start',
-                        message: '正在下载Gemini Nano模型...',
-                        progress: 0
-                    });
-                }
-
                 // 创建临时会话以触发下载并监听进度
                 try {
                     const tempSession = await LanguageModel.create({
@@ -53,7 +44,7 @@ class AIContentOptimizer {
                                 if (this.progressCallback) {
                                     this.progressCallback({
                                         type: 'download_progress',
-                                        message: `正在下载Gemini Nano模型... ${progress}%`,
+                                        message: `Downloading Gemini Nano... ${progress}%`,
                                         progress: progress
                                     });
                                 }
@@ -67,7 +58,7 @@ class AIContentOptimizer {
                     if (this.progressCallback) {
                         this.progressCallback({
                             type: 'download_complete',
-                            message: '模型下载完成，正在初始化...',
+                            message: 'Model downloaded，initializing...',
                             progress: 100
                         });
                     }
@@ -86,7 +77,7 @@ class AIContentOptimizer {
                             if (this.progressCallback) {
                                 this.progressCallback({
                                     type: 'ready',
-                                    message: 'Gemini Nano已准备就绪',
+                                    message: 'Gemini Nano is ready',
                                     progress: 100
                                 });
                             }
@@ -103,16 +94,16 @@ class AIContentOptimizer {
                     }
                 } catch (downloadError) {
                     console.error('[AI Optimizer] 模型下载失败:', downloadError);
-                    throw new Error(`模型下载失败: ${downloadError.message}。请检查网络连接并重试。`);
+                    throw new Error(`Download failed: ${downloadError.message}。`);
                 }
             } else if (availability !== 'available') {
                 const errorMessages = {
-                    'not-available': 'Gemini Nano不可用。请确保使用Chrome 127+版本并启用Prompt API功能：chrome://flags/#prompt-api-for-gemini-nano',
-                    'after-download': '模型下载后需要重启浏览器才能使用',
-                    'no': 'Gemini Nano功能未启用'
+                    'not-available': 'Gemini Nano not available。Make sure the Prompt API enabled：chrome://flags/#prompt-api-for-gemini-nano',
+                    'after-download': 'Restart Chrome to use',
+                    'no': 'Gemini Nano disabled'
                 };
 
-                const message = errorMessages[availability] || `Gemini Nano状态异常: ${availability}`;
+                const message = errorMessages[availability] || `Gemini Nano not available: ${availability}`;
                 throw new Error(message);
             }
 
@@ -131,7 +122,7 @@ class AIContentOptimizer {
             return this.session;
         } catch (error) {
             console.error('[AI Optimizer] Failed to create Gemini Nano session:', error);
-            throw new Error(`无法创建Gemini Nano会话: ${error.message}`);
+            throw new Error(`Can't create Gemini Nano session: ${error.message}`);
         }
     }
 
