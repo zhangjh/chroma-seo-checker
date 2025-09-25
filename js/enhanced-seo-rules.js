@@ -260,7 +260,7 @@ class EnhancedSEORules {
                 weight: rule.weight,
                 location: this.getIssueLocation(rule.id),
                 currentValue: this.getCurrentValue(rule.id, analysis),
-                expectedValue: this.getExpectedValue(rule.id),
+                expectedValue: this.getExpectedValue(rule.id, analysis),
                 impact: this.getImpact(rule.id),
                 selector: selector,
                 autoFix: rule.autoFix || false
@@ -359,32 +359,94 @@ class EnhancedSEORules {
   }
 
   getCurrentValue(ruleId, analysis) {
+    const title = analysis.metaTags?.title || '';
+    const description = analysis.metaTags?.description || '';
+    const h1Array = analysis.headings?.h1 || [];
+    
     const currentValues = {
-      'title_exists': 'No title',
-      'title_length': `${analysis.metaTags?.title?.length || 0} characters`,
-      'meta_description_exists': 'No description',
-      'meta_description_length': `${analysis.metaTags?.description?.length || 0} characters`,
-      'h1_exists': 'No H1 title',
-      'h1_unique': `${analysis.headings?.h1?.length || 0} H1s`,
-      'canonical_url': 'No Canonical tag',
-      'mobile_friendly': analysis.metaTags?.viewport || 'No viewport setting',
-      'images_alt': `${analysis.images?.imagesWithoutAlt || 0} missing Alt`,
+      // Technical SEO - 显示数值和实际内容
+      'title_exists': title ? `Title exists ("${title}")` : 'No title',
+      'title_length': title ? `${title.length} characters ("${title}")` : '0 characters (No title)',
+      'meta_description_exists': description ? `Description exists ("${description}")` : 'No description',
+      'meta_description_length': description ? `${description.length} characters ("${description}")` : '0 characters (No description)',
+      'h1_exists': h1Array.length > 0 ? `H1 exists ("${h1Array[0]}")` : 'No H1 title',
+      'h1_unique': h1Array.length === 0 ? 'No H1 titles' : 
+                   h1Array.length === 1 ? `1 H1 title ("${h1Array[0]}")` :
+                   `${h1Array.length} H1 titles (${h1Array.map(h1 => `"${h1}"`).join(', ')})`,
+      'canonical_url': analysis.metaTags?.canonical ? `Canonical set (${analysis.metaTags.canonical})` : 'No Canonical tag',
+      'mobile_friendly': analysis.metaTags?.viewport ? `Viewport configured (${analysis.metaTags.viewport})` : 'No viewport setting',
+      'open_graph': this.getOpenGraphStatus(analysis),
+      'robots_meta': analysis.metaTags?.robots ? `Robots configured (${analysis.metaTags.robots})` : 'No Robots directive',
+      'lang_attribute': analysis.metaTags?.language ? `Language set (${analysis.metaTags.language})` : 'No lang attribute',
+      'images_alt': this.getImageAltStatus(analysis),
+      
+      // Content SEO
       'content_length': `${analysis.content?.wordCount || 0} words`,
-      'text_html_ratio': `${analysis.content?.textToHtmlRatio || 0}%`,
-      'internal_links': `${analysis.content?.internalLinks || 0} internal links`,
-      'heading_structure': 'Heading structure info',
+      'text_html_ratio': `${analysis.content?.textToHtmlRatio || 0}% text ratio`,
+      'internal_links': `${analysis.links?.internalLinks || 0} internal links`,
+      'heading_structure': this.getHeadingStructureStatus(analysis),
+      'external_links': `${analysis.links?.externalLinks || 0} external links`,
+      'keyword_density': this.getKeywordDensityStatus(analysis),
+      
+      // Performance
       'page_size': `${Math.round((analysis.performance?.pageSize || 0) / 1024)}KB`,
-      'load_time': `${Math.round(analysis.performance?.loadTime || 0)} seconds`,
-      'https_usage': 'HTTP protocol',
-      'image_optimization': `${analysis.images?.totalImages || 0} images need optimization`,
-      'open_graph': 'No OG tags',
-      'robots_meta': 'No Robots directive',
-      'lang_attribute': 'No lang attribute',
-      'external_links': `${analysis.content?.externalLinks || 0} external links`,
-      'keyword_density': 'Keyword density info'
+      'load_time': `${(analysis.performance?.loadTime || 0).toFixed(2)} seconds`,
+      'https_usage': analysis.technical?.hasSSL ? 'HTTPS protocol' : 'HTTP protocol (insecure)',
+      'image_optimization': this.getImageOptimizationStatus(analysis)
     };
     
     return currentValues[ruleId] || 'Unknown';
+  }
+
+  getOpenGraphStatus(analysis) {
+    const ogTags = analysis.metaTags?.ogTags || {};
+    const ogCount = Object.keys(ogTags).length;
+    
+    if (ogCount === 0) return 'No Open Graph tags';
+    
+    const mainTags = ['og:title', 'og:description', 'og:image', 'og:url'];
+    const presentTags = mainTags.filter(tag => ogTags[tag]);
+    
+    return `${ogCount} OG tags configured (${presentTags.join(', ')})`;
+  }
+
+  getImageAltStatus(analysis) {
+    const totalImages = analysis.images?.totalImages || 0;
+    const missingAlt = analysis.images?.imagesWithoutAlt || 0;
+    const withAlt = totalImages - missingAlt;
+    
+    if (totalImages === 0) return 'No images found';
+    if (missingAlt === 0) return `${totalImages} images, all have Alt attributes`;
+    
+    return `${totalImages} images, ${missingAlt} missing Alt attributes (${withAlt} have Alt)`;
+  }
+
+  getImageOptimizationStatus(analysis) {
+    const totalImages = analysis.images?.totalImages || 0;
+    const missingAlt = analysis.images?.imagesWithoutAlt || 0;
+    
+    if (totalImages === 0) return 'No images to optimize';
+    
+    return `${totalImages} images total, ${missingAlt} need Alt attributes`;
+  }
+
+  getHeadingStructureStatus(analysis) {
+    const h1Count = analysis.headings?.h1?.length || 0;
+    const h2Count = analysis.headings?.h2?.length || 0;
+    const h3Count = analysis.headings?.h3?.length || 0;
+    
+    if (h1Count === 0) return 'No heading structure';
+    if (h1Count > 1) return `${h1Count} H1s (should be 1)`;
+    return `H1(${h1Count}), H2(${h2Count}), H3(${h3Count})`;
+  }
+
+  getKeywordDensityStatus(analysis) {
+    const density = analysis.content?.keywordDensity || {};
+    const maxDensity = Math.max(...Object.values(density), 0);
+    const keywordCount = Object.keys(density).length;
+    
+    if (keywordCount === 0) return 'No keywords detected';
+    return `Max density: ${maxDensity.toFixed(1)}%, ${keywordCount} keywords`;
   }
 
   getSelector(ruleId) {
@@ -416,18 +478,38 @@ class EnhancedSEORules {
     return selectors[ruleId] || null;
   }
 
-  getExpectedValue(ruleId) {
+  getExpectedValue(ruleId, analysis) {
     const expectedValues = {
-      'title_exists': '30-60 character title',
-      'title_length': '30-60 characters',
-      'meta_description_exists': '120-160 character description',
-      'h1_exists': '1 H1 title',
-      'images_alt': 'All images have Alt',
-      'content_length': 'At least 300 words',
-      'page_size': 'Less than 2MB'
+      // Technical SEO - 提供具体的改进建议
+      'title_exists': '30-60 character title (Create a descriptive title with main keywords)',
+      'title_length': '30-60 characters (Adjust title length for better search display)',
+      'meta_description_exists': '120-160 character description (Write compelling description with keywords)',
+      'meta_description_length': '120-160 characters (Optimize description length for search snippets)',
+      'h1_exists': '1 H1 title (Add main heading that describes page content)',
+      'h1_unique': '1 unique H1 title (Merge multiple H1s into one main heading)',
+      'canonical_url': 'Canonical URL set (Add <link rel="canonical"> to prevent duplicate content)',
+      'mobile_friendly': 'Mobile viewport configured (Add <meta name="viewport" content="width=device-width, initial-scale=1">)',
+      'open_graph': 'Open Graph tags configured (Add og:title, og:description, og:image for social sharing)',
+      'robots_meta': 'Robots meta tag set (Add <meta name="robots" content="index,follow">)',
+      'lang_attribute': 'HTML lang attribute set (Add lang="zh-CN" or appropriate language to <html>)',
+      'images_alt': 'All images have Alt attributes (Add descriptive alt text to all images)',
+      
+      // Content SEO
+      'content_length': 'At least 300 words (Expand content with valuable information)',
+      'text_html_ratio': 'At least 15% text ratio (Reduce HTML markup or add more text content)',
+      'internal_links': '2-5 internal links (Add links to related pages on your site)',
+      'heading_structure': 'Proper heading hierarchy (Use H1→H2→H3 structure logically)',
+      'external_links': '1-3 relevant external links (Link to authoritative external sources)',
+      'keyword_density': 'Keyword density 2-5% (Balance keyword usage naturally)',
+      
+      // Performance
+      'page_size': 'Less than 2MB (Optimize images and remove unnecessary code)',
+      'load_time': 'Less than 3 seconds (Optimize images, enable compression, use CDN)',
+      'https_usage': 'HTTPS protocol (Enable SSL certificate for security)',
+      'image_optimization': 'All images optimized (Compress images and add Alt attributes)'
     };
     
-    return expectedValues[ruleId] || 'Meets SEO standards';
+    return expectedValues[ruleId] || 'Meets SEO standards (Continue following best practices)';
   }
 
   getImpact(ruleId) {

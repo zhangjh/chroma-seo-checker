@@ -116,7 +116,7 @@ class DetailedReportUI {
     this.displayScores(report.score);
     
     // Update issues
-    this.displayIssues(report.issues);
+    this.displayIssues(report.issues, report.suggestions);
     
     // Update technical analysis
     this.displayTechnicalAnalysis(report.technicalResults, report.performanceResults);
@@ -179,7 +179,10 @@ class DetailedReportUI {
     }
   }
 
-  displayIssues(issues) {
+  displayIssues(issues, suggestions = null) {
+    // Store suggestions for use in rendering
+    this.aiSuggestions = suggestions;
+    
     // Count issues by severity
     const counts = {
       critical: issues.filter(i => i.severity === 'critical').length,
@@ -232,6 +235,10 @@ class DetailedReportUI {
   }
 
   renderIssueItem(issue) {
+    // Get AI suggestion for this issue
+    const aiSuggestion = this.getAISuggestionForIssue(issue);
+    const suggestedValue = aiSuggestion || issue.expectedValue;
+    
     return `
       <div class="issue-item ${issue.severity}">
         <div class="issue-header">
@@ -246,9 +253,10 @@ class DetailedReportUI {
             <strong>Current Status:</strong> ${issue.currentValue}
           </div>` : ''}
           
-          ${issue.expectedValue ? `
+          ${suggestedValue ? `
           <div class="issue-detail">
-            <strong>Suggested Value:</strong> ${issue.expectedValue}
+            <strong>Suggested Value:</strong> ${suggestedValue}
+            ${aiSuggestion ? '<span class="ai-badge">🤖 AI Suggestion</span>' : ''}
           </div>` : ''}
           
           ${issue.location ? `
@@ -268,6 +276,34 @@ class DetailedReportUI {
         </div>
       </div>
     `;
+  }
+
+  getAISuggestionForIssue(issue) {
+    if (!this.aiSuggestions) return null;
+    
+    // Map issue types to AI suggestion properties
+    const issueToSuggestionMap = {
+      'title_exists': 'titleOptimization',
+      'title_length': 'titleOptimization',
+      'meta_description_exists': 'metaDescriptionSuggestion',
+      'meta_description_length': 'metaDescriptionSuggestion',
+      'h1_exists': 'titleOptimization',
+      'h1_unique': 'titleOptimization'
+    };
+    
+    const suggestionType = issueToSuggestionMap[issue.id];
+    if (!suggestionType || !this.aiSuggestions[suggestionType]) return null;
+    
+    const suggestion = this.aiSuggestions[suggestionType];
+    
+    // Return the appropriate suggestion based on issue type
+    if (issue.id.includes('title') || issue.id.includes('h1')) {
+      return suggestion.suggestion || suggestion.optimizedTitle;
+    } else if (issue.id.includes('description')) {
+      return suggestion.suggestion || suggestion.optimizedDescription;
+    }
+    
+    return null;
   }
 
   displayTechnicalAnalysis(technicalResults, performanceResults) {
