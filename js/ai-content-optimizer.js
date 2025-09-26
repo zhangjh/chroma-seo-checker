@@ -6,6 +6,7 @@ class AIContentOptimizer {
         this.session = null;
         this.progressCallback = null;
         this.currentTabId = null;
+        this.cacheExpiry = 24 * 60 * 60 * 1000; // 24小时过期
     }
 
     setProgressCallback(callback) {
@@ -147,6 +148,22 @@ class AIContentOptimizer {
             // 存储当前标签页ID，用于获取真实页面内容
             this.currentTabId = tabId;
 
+            // 检查缓存
+            const cacheKey = this.generateCacheKey(analysis.url, seoIssues);
+            const cachedSuggestions = await this.getCachedSuggestions(cacheKey);
+            
+            if (cachedSuggestions) {
+                console.log('[AI Optimizer] 使用缓存的AI建议');
+                if (this.progressCallback) {
+                    this.progressCallback({
+                        type: 'cache_hit',
+                        message: '使用缓存的AI建议',
+                        progress: 100
+                    });
+                }
+                return cachedSuggestions;
+            }
+
             const session = await this.ensureSession();
             console.log('[AI Optimizer] AI会话已准备就绪');
 
@@ -250,6 +267,16 @@ class AIContentOptimizer {
 
             console.log('[AI Optimizer] 所有优化建议生成完成，返回结果');
             console.log('[AI Optimizer] 生成的建议类型:', Object.keys(optimizations));
+            
+            // 缓存生成的建议
+            try {
+                await this.cacheSuggestions(cacheKey, optimizations);
+                console.log('[AI Optimizer] AI建议已缓存');
+            } catch (cacheError) {
+                console.warn('[AI Optimizer] 缓存AI建议失败:', cacheError);
+                // 缓存失败不影响主要功能
+            }
+            
             return optimizations;
         } catch (error) {
             console.error('[AI Optimizer] Failed to generate optimizations:', error);
@@ -762,6 +789,70 @@ Please respond in JSON format:
             .sort(([, a], [, b]) => b - a)
             .slice(0, 10)
             .map(([keyword]) => keyword);
+    }
+
+    // 缓存相关方法
+    generateCacheKey(url, seoIssues) {
+        // 基于URL和SEO问题生成缓存键
+        const issueIds = seoIssues.map(issue => issue.id || issue.title).sort().join(',');
+        const keyString = `${url}|${issueIds}`;
+        // 使用简单的哈希函数生成缓存键
+        return 'ai_suggestions_' + btoa(keyString).replace(/[^a-zA-Z0-9]/g, '').substring(0, 50);
+    }
+
+    async getCachedSuggestions(cacheKey) {
+        try {
+            const result = await chrome.storage.local.get(cacheKey);
+            const cached = result[cacheKey];
+            
+            if (!cached) {
+                return null;
+            }
+            
+            // 检查是否过期
+            const now = Date.now();
+            if (now - cached.timestamp > this.cacheExpiry) {
+                // 清理过期缓存
+                await chrome.storage.local.remove(cacheKey);
+                return null;
+            }
+            
+            return cached.data;
+        } catch (error) {
+            console.warn('[AI Optimizer] 获取缓存失败:', error);
+            return null;
+        }
+    }
+
+    async cacheSuggestions(cacheKey, suggestions) {
+        try {
+            const cacheData = {
+                data: suggestions,
+                timestamp: Date.now()
+            };
+            
+            await chrome.storage.local.set({
+                [cacheKey]: cacheData
+            });
+        } catch (error) {
+            console.warn('[AI Optimizer] 保存缓存失败:', error);
+            throw error;
+        }
+    }
+
+    async clearCache() {
+        try {
+            // 获取所有存储的键
+            const allItems = await chrome.storage.local.get(null);
+            const cacheKeys = Object.keys(allItems).filter(key => key.startsWith('ai_suggestions_'));
+            
+            if (cacheKeys.length > 0) {
+                await chrome.storage.local.remove(cacheKeys);
+                console.log(`[AI Optimizer] 已清理 ${cacheKeys.length} 个缓存项`);
+            }
+        } catch (error) {
+            console.warn('[AI Optimizer] 清理缓存失败:', error);
+        }
     }
 }
 
