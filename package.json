@@ -1,6 +1,6 @@
 {
   "name": "seo-checker-extension",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "基于Chrome内置AI的智能SEO检查扩展插件",
   "main": "dist/background/background.js",
   "scripts": {

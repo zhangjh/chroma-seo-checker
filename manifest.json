@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "SEO Checker - AI-Powered SEO Analysis",
-  "version": "1.0.0",
+  "name": "Chroma SEO Checker - AI-Powered SEO Analysis",
+  "version": "2.0.0",
   "description": "AI-powered SEO analysis tool with real-time optimization suggestions",
   "permissions": [
     "activeTab",
@@ -34,7 +34,7 @@
   ],
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "SEO Checker",
+    "default_title": "Chroma SEO Checker",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
