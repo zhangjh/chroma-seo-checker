@@ -167,8 +167,19 @@ class AIContentOptimizer {
             const session = await this.ensureSession();
             console.log('[AI Optimizer] AI会话已准备就绪');
 
+            // 通知开始生成建议
+            if (this.progressCallback) {
+                this.progressCallback({
+                    type: 'generation_start',
+                    message: 'Starting AI suggestion generation...',
+                    progress: 10
+                });
+            }
+
             // 根据SEO检查结果决定生成哪些建议
             const optimizations = {};
+            let completedTasks = 0;
+            const totalTasks = this.countTotalTasks(seoIssues);
 
             // 检查是否有标题相关问题
             const titleIssues = seoIssues.filter(issue =>
@@ -181,8 +192,29 @@ class AIContentOptimizer {
 
             if (titleIssues.length > 0) {
                 console.log('[AI Optimizer] 发现标题问题，开始生成标题优化建议');
+                
+                // 通知开始生成标题建议
+                if (this.progressCallback) {
+                    this.progressCallback({
+                        type: 'title_start',
+                        message: 'Generating title optimization suggestions...',
+                        progress: Math.round(20 + (completedTasks / totalTasks) * 60)
+                    });
+                }
+                
                 optimizations.titleOptimization = await this.optimizeTitle(analysis, session, titleIssues);
+                completedTasks++;
+                
                 console.log('[AI Optimizer] 标题优化建议生成完成');
+                
+                // 通知标题建议完成
+                if (this.progressCallback) {
+                    this.progressCallback({
+                        type: 'title_complete',
+                        message: 'Title optimization suggestions completed',
+                        progress: Math.round(20 + (completedTasks / totalTasks) * 60)
+                    });
+                }
             }
 
             // 检查是否有Meta描述相关问题
@@ -196,8 +228,29 @@ class AIContentOptimizer {
 
             if (metaIssues.length > 0) {
                 console.log('[AI Optimizer] 发现Meta描述问题，开始生成描述优化建议');
+                
+                // 通知开始生成Meta描述建议
+                if (this.progressCallback) {
+                    this.progressCallback({
+                        type: 'meta_start',
+                        message: 'Generating meta description suggestions...',
+                        progress: Math.round(20 + (completedTasks / totalTasks) * 60)
+                    });
+                }
+                
                 optimizations.metaDescriptionSuggestion = await this.optimizeMetaDescription(analysis, session, metaIssues);
+                completedTasks++;
+                
                 console.log('[AI Optimizer] Meta描述优化建议生成完成');
+                
+                // 通知Meta描述建议完成
+                if (this.progressCallback) {
+                    this.progressCallback({
+                        type: 'meta_complete',
+                        message: 'Meta description suggestions completed',
+                        progress: Math.round(20 + (completedTasks / totalTasks) * 60)
+                    });
+                }
             }
 
             // 检查是否有内容相关问题
@@ -213,8 +266,29 @@ class AIContentOptimizer {
 
             if (contentIssues.length > 0) {
                 console.log('[AI Optimizer] 发现内容问题，开始生成内容改进建议');
+                
+                // 通知开始生成内容改进建议
+                if (this.progressCallback) {
+                    this.progressCallback({
+                        type: 'content_start',
+                        message: 'Generating content improvement suggestions...',
+                        progress: Math.round(20 + (completedTasks / totalTasks) * 60)
+                    });
+                }
+                
                 optimizations.contentImprovements = await this.generateContentImprovements(analysis, session, contentIssues);
+                completedTasks++;
+                
                 console.log('[AI Optimizer] 内容改进建议生成完成');
+                
+                // 通知内容改进建议完成
+                if (this.progressCallback) {
+                    this.progressCallback({
+                        type: 'content_complete',
+                        message: 'Content improvement suggestions completed',
+                        progress: Math.round(20 + (completedTasks / totalTasks) * 60)
+                    });
+                }
             }
 
             // 检查是否有关键词相关问题
@@ -227,9 +301,29 @@ class AIContentOptimizer {
 
             if (keywordIssues.length > 0) {
                 console.log('[AI Optimizer] 开始生成关键词建议');
-                // 如果有其他优化建议，也提供关键词建议
+                
+                // 通知开始生成关键词建议
+                if (this.progressCallback) {
+                    this.progressCallback({
+                        type: 'keyword_start',
+                        message: 'Generating keyword suggestions...',
+                        progress: Math.round(20 + (completedTasks / totalTasks) * 60)
+                    });
+                }
+                
                 optimizations.keywordSuggestions = await this.generateKeywordSuggestions(analysis, session, keywordIssues);
+                completedTasks++;
+                
                 console.log('[AI Optimizer] 关键词建议生成完成');
+                
+                // 通知关键词建议完成
+                if (this.progressCallback) {
+                    this.progressCallback({
+                        type: 'keyword_complete',
+                        message: 'Keyword suggestions completed',
+                        progress: Math.round(20 + (completedTasks / totalTasks) * 60)
+                    });
+                }
             }
 
             // 检查是否有结构相关问题
@@ -248,13 +342,44 @@ class AIContentOptimizer {
 
             if (structureIssues.length > 0) {
                 console.log('[AI Optimizer] 发现结构问题，开始生成结构优化建议');
+                
+                // 通知开始生成结构建议
+                if (this.progressCallback) {
+                    this.progressCallback({
+                        type: 'structure_start',
+                        message: 'Generating structure optimization suggestions...',
+                        progress: Math.round(20 + (completedTasks / totalTasks) * 60)
+                    });
+                }
+                
                 optimizations.structureRecommendations = await this.generateStructureRecommendations(analysis, session, structureIssues);
+                completedTasks++;
+                
                 console.log('[AI Optimizer] 结构优化建议生成完成');
+                
+                // 通知结构建议完成
+                if (this.progressCallback) {
+                    this.progressCallback({
+                        type: 'structure_complete',
+                        message: 'Structure optimization suggestions completed',
+                        progress: Math.round(20 + (completedTasks / totalTasks) * 60)
+                    });
+                }
             }
 
             // 如果没有发现任何问题，返回一个总结
             if (Object.keys(optimizations).length === 0) {
                 console.log('[AI Optimizer] 没有发现SEO问题，生成总结信息');
+                
+                // 通知生成总结信息
+                if (this.progressCallback) {
+                    this.progressCallback({
+                        type: 'summary_generation',
+                        message: 'No issues found, generating summary...',
+                        progress: 80
+                    });
+                }
+                
                 optimizations.summary = {
                     message: '🎉 恭喜！您的页面SEO状况良好，暂时没有发现需要AI优化的问题。',
                     suggestions: [
@@ -268,13 +393,38 @@ class AIContentOptimizer {
             console.log('[AI Optimizer] 所有优化建议生成完成，返回结果');
             console.log('[AI Optimizer] 生成的建议类型:', Object.keys(optimizations));
             
+            // 通知所有建议生成完成
+            if (this.progressCallback) {
+                this.progressCallback({
+                    type: 'generation_complete',
+                    message: 'All AI suggestions generated successfully!',
+                    progress: 90
+                });
+            }
+            
             // 缓存生成的建议
             try {
                 await this.cacheSuggestions(cacheKey, optimizations);
                 console.log('[AI Optimizer] AI建议已缓存');
+                
+                // 通知缓存完成
+                if (this.progressCallback) {
+                    this.progressCallback({
+                        type: 'cache_complete',
+                        message: 'AI suggestions cached for faster access',
+                        progress: 100
+                    });
+                }
             } catch (cacheError) {
                 console.warn('[AI Optimizer] 缓存AI建议失败:', cacheError);
                 // 缓存失败不影响主要功能
+                if (this.progressCallback) {
+                    this.progressCallback({
+                        type: 'complete',
+                        message: 'AI suggestions generated successfully!',
+                        progress: 100
+                    });
+                }
             }
             
             return optimizations;
@@ -789,6 +939,69 @@ Please respond in JSON format:
             .sort(([, a], [, b]) => b - a)
             .slice(0, 10)
             .map(([keyword]) => keyword);
+    }
+
+    // 辅助方法：计算需要生成的建议总数
+    countTotalTasks(seoIssues) {
+        let taskCount = 0;
+        
+        // 检查标题相关问题
+        const titleIssues = seoIssues.filter(issue =>
+            issue.type === 'title' ||
+            issue.title.includes('标题') ||
+            issue.title.includes('Title') ||
+            issue.id === 'missing-title' ||
+            issue.id === 'title-length'
+        );
+        if (titleIssues.length > 0) taskCount++;
+        
+        // 检查Meta描述相关问题
+        const metaIssues = seoIssues.filter(issue =>
+            issue.type === 'meta' ||
+            issue.title.includes('描述') ||
+            issue.title.includes('Description') ||
+            issue.id === 'missing-description' ||
+            issue.id === 'description-length'
+        );
+        if (metaIssues.length > 0) taskCount++;
+        
+        // 检查内容相关问题
+        const contentIssues = seoIssues.filter(issue =>
+            issue.type === 'content' ||
+            issue.title.includes('内容') ||
+            issue.title.includes('Content') ||
+            issue.title.includes('可读性') ||
+            issue.title.includes('字数') ||
+            issue.id === 'content-length' ||
+            issue.id === 'readability'
+        );
+        if (contentIssues.length > 0) taskCount++;
+        
+        // 检查关键词相关问题
+        const keywordIssues = seoIssues.filter(issue =>
+            issue.type === 'keyword' ||
+            issue.title.includes('关键词') ||
+            issue.title.includes('Keyword') ||
+            issue.id === 'keyword-density'
+        );
+        if (keywordIssues.length > 0) taskCount++;
+        
+        // 检查结构相关问题
+        const structureIssues = seoIssues.filter(issue =>
+            issue.type === 'structure' ||
+            issue.type === 'heading' ||
+            issue.type === 'image' ||
+            issue.title.includes('结构') ||
+            issue.title.includes('标题') ||
+            issue.title.includes('图片') ||
+            issue.title.includes('Alt') ||
+            issue.id === 'heading-structure' ||
+            issue.id === 'missing-alt' ||
+            issue.id === 'h1-missing'
+        );
+        if (structureIssues.length > 0) taskCount++;
+        
+        return Math.max(taskCount, 1); // 至少返回1，避免除零错误
     }
 
     // 缓存相关方法
