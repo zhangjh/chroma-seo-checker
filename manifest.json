@@ -53,7 +53,8 @@
       "resources": [
         "popup/detailed-report.html",
         "popup/detailed-report.css",
-        "popup/detailed-report.js"
+        "popup/detailed-report.js",
+        "js/markdown-renderer.js"
       ],
       "matches": [
         "http://*/*",

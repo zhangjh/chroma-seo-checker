@@ -4,6 +4,7 @@
 class SimplePopupUI {
   constructor() {
     this.elements = this.getUIElements();
+    this.markdownRenderer = new MarkdownRenderer();
     this.currentFilter = 'all';
     this.initializeEventListeners();
     this.initializeMessageListener();
@@ -450,7 +451,7 @@ class SimplePopupUI {
           </div>
         </div>
         <div class="issue-summary">
-          <div class="issue-description">${issue.description}</div>
+          <div class="issue-description">${this.renderContent(issue.description)}</div>
           ${locationInfo}
         </div>
         <div class="issue-details hidden">
@@ -459,7 +460,7 @@ class SimplePopupUI {
           ${impactInfo}
           <div class="issue-recommendation">
             <strong>Solution:</strong>
-            <div class="recommendation-content">${issue.recommendation}</div>
+            <div class="recommendation-content">${this.renderContent(issue.recommendation)}</div>
           </div>
         </div>
       `;
@@ -579,15 +580,16 @@ class SimplePopupUI {
         </div>` : ''}
         
         <div class="suggestion-reason">
-          <strong>Analysis:</strong> ${titleOpt.reason}
+          <strong>Analysis:</strong> ${this.renderContent(titleOpt.reason)}
         </div>
         
         ${titleOpt.improvements && titleOpt.improvements.length > 0 ? `
         <div class="improvement-tips">
           <strong>Improvement Points:</strong>
-          <ul>
-            ${titleOpt.improvements.map(tip => `<li>${tip}</li>`).join('')}
-          </ul>
+          ${titleOpt.improvements.some(tip => this.markdownRenderer.hasMarkdownSyntax(tip)) 
+            ? this.renderContent(titleOpt.improvements.map(tip => `• ${tip}`).join('\n'))
+            : `<ul>${titleOpt.improvements.map(tip => `<li>${this.renderContent(tip)}</li>`).join('')}</ul>`
+          }
         </div>` : ''}
         
         ${titleOpt.keywords && titleOpt.keywords.length > 0 ? `
@@ -644,15 +646,16 @@ class SimplePopupUI {
         </div>` : ''}
         
         <div class="suggestion-reason">
-          <strong>Analysis:</strong> ${metaOpt.reason}
+          <strong>Analysis:</strong> ${this.renderContent(metaOpt.reason)}
         </div>
         
         ${metaOpt.guidelines && metaOpt.guidelines.length > 0 ? `
         <div class="improvement-tips">
           <strong>Writing Guidelines:</strong>
-          <ul>
-            ${metaOpt.guidelines.map(tip => `<li>${tip}</li>`).join('')}
-          </ul>
+          ${metaOpt.guidelines.some(tip => this.markdownRenderer.hasMarkdownSyntax(tip)) 
+            ? this.renderContent(metaOpt.guidelines.map(tip => `• ${tip}`).join('\n'))
+            : `<ul>${metaOpt.guidelines.map(tip => `<li>${this.renderContent(tip)}</li>`).join('')}</ul>`
+          }
         </div>` : ''}
       </div>
     `;
@@ -678,13 +681,14 @@ class SimplePopupUI {
               <span class="priority-badge ${improvement.priority}">${this.getPriorityText(improvement.priority)}</span>
               <strong>${improvement.title}</strong>
             </div>
-            <div class="improvement-description">${improvement.description}</div>
+            <div class="improvement-description">${this.renderContent(improvement.description)}</div>
             ${improvement.suggestions && improvement.suggestions.length > 0 ? `
             <div class="improvement-suggestions">
               <strong>Specific Suggestions:</strong>
-              <ul>
-                ${improvement.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
-              </ul>
+              ${improvement.suggestions.some(suggestion => this.markdownRenderer.hasMarkdownSyntax(suggestion)) 
+                ? this.renderContent(improvement.suggestions.map(suggestion => `• ${suggestion}`).join('\n'))
+                : `<ul>${improvement.suggestions.map(suggestion => `<li>${this.renderContent(suggestion)}</li>`).join('')}</ul>`
+              }
             </div>` : ''}
           </div>
         `).join('')}
@@ -759,13 +763,14 @@ class SimplePopupUI {
             <div class="recommendation-header">
               <strong>${rec.title}</strong>
             </div>
-            <div class="recommendation-description">${rec.description}</div>
+            <div class="recommendation-description">${this.renderContent(rec.description)}</div>
             ${rec.steps && rec.steps.length > 0 ? `
             <div class="implementation-steps">
               <strong>Implementation Steps:</strong>
-              <ol>
-                ${rec.steps.map(step => `<li>${step}</li>`).join('')}
-              </ol>
+              ${rec.steps.some(step => this.markdownRenderer.hasMarkdownSyntax(step)) 
+                ? this.renderContent(rec.steps.map((step, i) => `${i + 1}. ${step}`).join('\n'))
+                : `<ol>${rec.steps.map(step => `<li>${this.renderContent(step)}</li>`).join('')}</ol>`
+              }
             </div>` : ''}
           </div>
         `).join('')}
@@ -806,6 +811,35 @@ class SimplePopupUI {
     }
   }
 
+  /**
+   * Render text content with markdown support
+   * @param {string} content - The content to render
+   * @param {string} fallback - Fallback content if original is empty
+   * @returns {string} - Rendered HTML content
+   */
+  renderContent(content, fallback = '') {
+    if (!content) return fallback;
+    
+    // Check if content contains markdown syntax
+    if (this.markdownRenderer.hasMarkdownSyntax(content)) {
+      return this.markdownRenderer.renderWithClasses(content, 'markdown-content');
+    }
+    
+    // Return plain text wrapped in a div for consistency
+    return `<div class="plain-content">${this.escapeHtml(content)}</div>`;
+  }
+
+  /**
+   * Escape HTML to prevent XSS
+   * @param {string} text - Text to escape
+   * @returns {string} - Escaped text
+   */
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
   getStatusText(status) {
     const statusMap = {
       'good': '✅ Good',
@@ -824,13 +858,14 @@ class SimplePopupUI {
         <h4>🎉 SEO Status Good</h4>
       </div>
       <div class="suggestion-content">
-        <div class="summary-message">${summary.message}</div>
+        <div class="summary-message">${this.renderContent(summary.message)}</div>
         ${summary.continuousOptimization && summary.continuousOptimization.length > 0 ? `
         <div class="continuous-optimization">
           <strong>Continuous Optimization Suggestions:</strong>
-          <ul>
-            ${summary.continuousOptimization.map(tip => `<li>${tip}</li>`).join('')}
-          </ul>
+          ${summary.continuousOptimization.some(tip => this.markdownRenderer.hasMarkdownSyntax(tip)) 
+            ? this.renderContent(summary.continuousOptimization.map(tip => `• ${tip}`).join('\n'))
+            : `<ul>${summary.continuousOptimization.map(tip => `<li>${this.renderContent(tip)}</li>`).join('')}</ul>`
+          }
         </div>` : ''}
       </div>
     `;
