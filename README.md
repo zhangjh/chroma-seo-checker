@@ -18,7 +18,8 @@ AI-powered SEO analysis tool using Chrome's built-in Gemini Nano for real-time o
 ### Installation
 
 Search "Chroma SEO Checker" in Chrome Store
-[Chroma SEO Checker](https://xxx)
+
+or visit: [Chroma SEO Checker](https://xxx)
 
 ### Requirements
 - Chrome 127+ (Gemini Nano support)
