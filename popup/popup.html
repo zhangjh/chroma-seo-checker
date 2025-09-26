@@ -120,7 +120,12 @@
             <section class="suggestions-section">
                 <div class="section-header">
                     <h3>AI Optimization Suggestions</h3>
-                    <button id="generate-suggestions" class="btn btn-secondary btn-sm">Generate Suggestions</button>
+                    <div class="header-actions">
+                        <button id="refresh-suggestions" class="btn btn-icon btn-sm" title="Refresh AI Suggestions" style="display: none;">
+                            <span class="icon">🔄</span>
+                        </button>
+                        <button id="generate-suggestions" class="btn btn-secondary btn-sm">Generate Suggestions</button>
+                    </div>
                 </div>
                 <div id="suggestions-status" class="suggestions-status hidden">
                     <span class="status-icon">ℹ️</span>

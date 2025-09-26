@@ -504,6 +504,12 @@ body {
     color: #495057;
 }
 
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .filter-tabs {
     display: flex;
     gap: 4px;

@@ -50,6 +50,7 @@ class SimplePopupUI {
       refreshBtn: document.getElementById('refresh-btn'),
       retryBtn: document.getElementById('retry-btn'),
       generateSuggestionsBtn: document.getElementById('generate-suggestions'),
+      refreshSuggestionsBtn: document.getElementById('refresh-suggestions'),
       detailedReportBtn: document.getElementById('detailed-report-btn')
     };
   }
@@ -82,6 +83,13 @@ class SimplePopupUI {
     if (this.elements.generateSuggestionsBtn) {
       this.elements.generateSuggestionsBtn.addEventListener('click', () => {
         this.generateAISuggestions();
+      });
+    }
+
+    // Refresh suggestions button
+    if (this.elements.refreshSuggestionsBtn) {
+      this.elements.refreshSuggestionsBtn.addEventListener('click', () => {
+        this.generateAISuggestions(true); // 强制刷新
       });
     }
 
@@ -524,6 +532,11 @@ class SimplePopupUI {
       this.elements.noSuggestions.style.display = 'none';
     }
 
+    // Show refresh suggestions button
+    if (this.elements.refreshSuggestionsBtn) {
+      this.elements.refreshSuggestionsBtn.style.display = 'inline-block';
+    }
+
     // Check if there's a summary (no issues found)
     if (suggestions.summary) {
       this.createSummarySection(suggestions.summary);
@@ -784,6 +797,18 @@ class SimplePopupUI {
     if (this.elements.suggestionsLoading) {
       this.elements.suggestionsLoading.style.display = show ? 'flex' : 'none';
     }
+    
+    // Hide refresh button during loading, but only show it if suggestions are already displayed
+    if (this.elements.refreshSuggestionsBtn) {
+      if (show) {
+        this.elements.refreshSuggestionsBtn.style.display = 'none';
+      } else {
+        // Only show refresh button if suggestions list has content
+        const hasSuggestions = this.elements.suggestionsList && 
+                              this.elements.suggestionsList.children.length > 0;
+        this.elements.refreshSuggestionsBtn.style.display = hasSuggestions ? 'inline-block' : 'none';
+      }
+    }
   }
 
   updateSuggestionsStatus(message, type) {
@@ -883,12 +908,15 @@ class SimplePopupUI {
     return priorityMap[priority] || priority;
   }
 
-  async generateAISuggestions() {
+  async generateAISuggestions(forceRefresh = false) {
     try {
-      console.log('[Popup] 开始生成AI建议');
+      console.log('[Popup] 开始生成AI建议', forceRefresh ? '(强制刷新)' : '');
       // Show loading state
       this.showSuggestionsLoading(true);
-      this.updateSuggestionsStatus('AI suggestions loading...', 'loading');
+      this.updateSuggestionsStatus(
+        forceRefresh ? 'Refreshing AI suggestions...' : 'AI suggestions loading...', 
+        'loading'
+      );
 
       // Get current tab
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -902,10 +930,11 @@ class SimplePopupUI {
 
       try {
         // Request AI suggestions from background
-        console.log('[Popup] 向background发送AI建议请求...');
+        console.log('[Popup] 向background发送AI建议请求...', forceRefresh ? '(跳过缓存)' : '');
         const response = await chrome.runtime.sendMessage({
           action: 'generateAISuggestions',
-          tabId: tab.id
+          tabId: tab.id,
+          forceRefresh: forceRefresh
         });
         console.log('[Popup] 收到background响应:', response);
 
@@ -975,9 +1004,9 @@ class SimplePopupUI {
     return progressInterval;
   }
 
-  refreshAnalysis() {
+  async refreshAnalysis() {
     this.showLoading();
-    this.loadCurrentPageAnalysis();
+    await this.loadCurrentPageAnalysis();
   }
 
 

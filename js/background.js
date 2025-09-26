@@ -385,7 +385,7 @@ class SimpleBackgroundService {
 
   async handleGenerateAISuggestions(message, sendResponse) {
     try {
-      const { tabId } = message;
+      const { tabId, forceRefresh = false } = message;
       
       if (!tabId) {
         throw new Error('Missing tab ID');
@@ -433,7 +433,10 @@ class SimpleBackgroundService {
 
       // Generate AI optimizations based on SEO issues
       console.log('[Background] Starting AI optimization suggestions, SEO issues count:', report.issues?.length || 0);
-      const optimizations = await this.aiOptimizer.generateContentOptimizations(analysisData, report.issues, tabId);
+      if (forceRefresh) {
+        console.log('[Background] Force refresh requested - bypassing cache');
+      }
+      const optimizations = await this.aiOptimizer.generateContentOptimizations(analysisData, report.issues, tabId, forceRefresh);
       console.log('[Background] AI optimization suggestions completed');
 
       // Clear progress callback

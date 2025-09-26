@@ -139,7 +139,7 @@ class AIContentOptimizer {
         }
     }
 
-    async generateContentOptimizations(analysis, seoIssues = [], tabId = null) {
+    async generateContentOptimizations(analysis, seoIssues = [], tabId = null, forceRefresh = false) {
         try {
             console.log('[AI Optimizer] 开始生成内容优化建议');
             console.log('[AI Optimizer] SEO问题数量:', seoIssues.length);
@@ -148,20 +148,32 @@ class AIContentOptimizer {
             // 存储当前标签页ID，用于获取真实页面内容
             this.currentTabId = tabId;
 
-            // 检查缓存
+            // 检查缓存（除非强制刷新）
             const cacheKey = this.generateCacheKey(analysis.url, seoIssues);
-            const cachedSuggestions = await this.getCachedSuggestions(cacheKey);
             
-            if (cachedSuggestions) {
-                console.log('[AI Optimizer] 使用缓存的AI建议');
+            if (!forceRefresh) {
+                const cachedSuggestions = await this.getCachedSuggestions(cacheKey);
+                
+                if (cachedSuggestions) {
+                    console.log('[AI Optimizer] 使用缓存的AI建议');
+                    if (this.progressCallback) {
+                        this.progressCallback({
+                            type: 'cache_hit',
+                            message: '使用缓存的AI建议',
+                            progress: 100
+                        });
+                    }
+                    return cachedSuggestions;
+                }
+            } else {
+                console.log('[AI Optimizer] 强制刷新：跳过缓存，重新生成AI建议');
                 if (this.progressCallback) {
                     this.progressCallback({
-                        type: 'cache_hit',
-                        message: '使用缓存的AI建议',
-                        progress: 100
+                        type: 'force_refresh',
+                        message: 'Force refresh: regenerating AI suggestions...',
+                        progress: 5
                     });
                 }
-                return cachedSuggestions;
             }
 
             const session = await this.ensureSession();
