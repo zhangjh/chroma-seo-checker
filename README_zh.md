@@ -18,7 +18,8 @@
 ### 安装方式
 
 Chrome扩展商店搜索Chroma SEO Checker
-[Chroma SEO Checker](https://xxx)
+
+或者直接访问：[Chroma SEO Checker](https://xxx)
 
 ### 系统要求
 - Chrome 127+ 版本（支持Gemini Nano）
